@@ -88,6 +88,11 @@ def GetBasename(filepath: str, isTrimExt: bool = False, newExt: str | None = Non
     return osp.basename(filepath)
 
 
+def ChangeFolder(filename: str, newFolder: str, newExt: str | None = None) -> str:
+    basename = GetBasename(filename, newExt=newExt)
+    return f"{newFolder}/{basename}"
+
+
 def PrintShape(a):
     print(a.shape)
     return a

@@ -107,10 +107,7 @@ def MakeDatasets(
         validTransform     : A.Compose | None = None,
         extractorTransform : A.Compose | None = None,
         fixedFeatureFile   : str | None       = None
-):
-    validImages = [f"{name}.jpg" for name in validNames]
-    validLabels = [f"{name}.png" for name in validNames]
-    
+):  
     if fixedFeatureFile:
         fixedFeatureDict = torch.load(fixedFeatureFile, map_location="cpu")
         fixedFeatureNames, fixedFeatureTensors = fixedFeatureDict["filenames"], fixedFeatureDict["features"]
@@ -128,21 +125,26 @@ def MakeDatasets(
         fixedFeatureTrainDict = None
         fixedFeatureValidDict = None
 
-
+    trainImageFiles = [f for f in glob.glob(f"{imageFolder}/*.jpg") if GetBasename(f, True) not in validNames]
+    trainLabelFiles = [ChangeFolder(f, labelFolder, "png") for f in trainImageFiles]
     trainset = ImageLabelTrainDataset(
-        imageFiles         = [f for f in glob.glob(f"{imageFolder}/*.jpg") if GetBasename(f) not in validImages],
-        labelFiles         = [f for f in glob.glob(f"{labelFolder}/*.png") if GetBasename(f) not in validLabels],
+        imageFiles         = trainImageFiles,
+        labelFiles         = trainLabelFiles,
         trainingTransform  = trainTransform,
         extractorTransform = extractorTransform,
         fixedFeatures      = fixedFeatureTrainDict
     )
+
+    validImageFiles = [f for f in glob.glob(f"{imageFolder}/*.jpg") if GetBasename(f, True) in validNames]
+    validLabelFiles = [ChangeFolder(f, labelFolder, "png") for f in validImageFiles]
     validset = ImageLabelTestDataset(
-        imageFiles         = validImages,
-        labelFiles         = validLabels,
+        imageFiles         = validImageFiles,
+        labelFiles         = validLabelFiles,
         testingTransform   = validTransform,
         extractorTransform = extractorTransform,
         fixedFeatures      = fixedFeatureValidDict
     )
+
     return trainset, validset
 
 
