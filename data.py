@@ -35,10 +35,12 @@ class ImageLabelTrainDataset(Dataset):
             labelFiles         : list[str],
             trainingTransform  : A.Compose | None               = None,
             extractorTransform : A.Compose | None               = None,
-            fixedFeatures      : dict[str, torch.Tensor] | None = None
+            fixedFeatures      : dict[str, torch.Tensor] | None = None,
+            nClass             : int                            = 150
     ):
         self.imageFiles = imageFiles
         self.labelFiles = labelFiles
+        self.nClass     = nClass
 
         self.trainingTransform  = trainingTransform or Transforms.GetTraining()
         self.extractorTransform = extractorTransform
@@ -55,14 +57,14 @@ class ImageLabelTrainDataset(Dataset):
         if self.fixedFeatures:
             return (
                 rearrange(torch.from_numpy(image), "h w c -> c h w"), 
-                rearrange(torch.from_numpy(mask ), "h w -> 1 h w"  ), 
+                rearrange(MaskToOnehot(torch.from_numpy(mask), self.nClass), "h w -> 1 h w"), 
                 self.fixedFeatures[GetBasename(self.imageFiles[i], True)]
             )
         
         toExtractor = self.extractorTransform(image=image)["image"] if self.extractorTransform else image
         return (
-            rearrange(torch.from_numpy(image      ), "h w c -> c h w"), 
-            rearrange(torch.from_numpy(mask       ), "h w -> 1 h w"), 
+            rearrange(torch.from_numpy(image), "h w c -> c h w"), 
+            rearrange(MaskToOnehot(torch.from_numpy(mask), self.nClass), "h w -> 1 h w"), 
             rearrange(torch.from_numpy(toExtractor), "h w c -> c h w")
         )
 
@@ -77,11 +79,12 @@ class ImageLabelTestDataset(Dataset):
             labelFiles         : list[str],
             testingTransform   : A.Compose | None               = None,
             extractorTransform : A.Compose | None               = None,
-            fixedFeatures      : dict[str, torch.Tensor] | None = None
-
+            fixedFeatures      : dict[str, torch.Tensor] | None = None,
+            nClass             : int                            = 150
     ):
         self.imageFiles = imageFiles
         self.labelFiles = labelFiles
+        self.nClass     = nClass
 
         self.testingTransform   = testingTransform or Transforms.GetTesting()
         self.extractorTransform = extractorTransform
@@ -99,10 +102,18 @@ class ImageLabelTestDataset(Dataset):
         image, mask = concat["image"], concat["mask"]
 
         if self.fixedFeatures:
-            return torch.from_numpy(image), torch.from_numpy(mask), self.fixedFeatures[GetBasename(self.imageFiles[i], True)]
+            return (
+                rearrange(torch.from_numpy(image), "h w c -> c h w"), 
+                rearrange(MaskToOnehot(torch.from_numpy(mask), self.nClass), "h w -> 1 h w"), 
+                self.fixedFeatures[GetBasename(self.imageFiles[i], True)]
+            )
         
         toExtractor = self.extractorTransform(image=image)["image"] if self.extractorTransform else image
-        return torch.from_numpy(image), torch.from_numpy(mask), torch.from_numpy(toExtractor)
+        return (
+            rearrange(torch.from_numpy(image), "h w c -> c h w"), 
+            rearrange(MaskToOnehot(torch.from_numpy(mask), self.nClass), "h w -> 1 h w"), 
+            rearrange(torch.from_numpy(toExtractor), "h w c -> c h w")
+        )
 
     def __len__(self):
         return len(self.pairs)
