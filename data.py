@@ -57,14 +57,14 @@ class ImageLabelTrainDataset(Dataset):
         if self.fixedFeatures:
             return (
                 rearrange(torch.from_numpy(image), "h w c -> c h w"), 
-                rearrange(MaskToOnehot(torch.from_numpy(mask).long(), self.nClass), "h w -> 1 h w"), 
+                MaskToOnehot(torch.from_numpy(mask).long(), self.nClass), 
                 self.fixedFeatures[GetBasename(self.imageFiles[i], True)]
             )
         
         toExtractor = self.extractorTransform(image=image)["image"] if self.extractorTransform else image
         return (
             rearrange(torch.from_numpy(image), "h w c -> c h w"), 
-            rearrange(MaskToOnehot(torch.from_numpy(mask).long(), self.nClass), "h w -> 1 h w"), 
+            MaskToOnehot(torch.from_numpy(mask).long(), self.nClass), 
             rearrange(torch.from_numpy(toExtractor), "h w c -> c h w")
         )
 
