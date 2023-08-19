@@ -52,7 +52,7 @@ class ImageLabelTrainDataset(Dataset):
         image, mask = concat["image"], concat["mask"]
 
         if self.fixedFeatures:
-            return torch.from_numpy(image), torch.from_numpy(mask), self.fixedFeatures(GetBasename(self.imageFiles[i], True))
+            return torch.from_numpy(image), torch.from_numpy(mask), self.fixedFeatures[GetBasename(self.imageFiles[i], True)]
         
         toExtractor = self.extractorTransform(image=image)["image"] if self.extractorTransform else image
         return torch.from_numpy(image), torch.from_numpy(mask), torch.from_numpy(toExtractor)
@@ -90,7 +90,7 @@ class ImageLabelTestDataset(Dataset):
         image, mask = concat["image"], concat["mask"]
 
         if self.fixedFeatures:
-            return torch.from_numpy(image), torch.from_numpy(mask), self.fixedFeatures(GetBasename(self.imageFiles[i], True))
+            return torch.from_numpy(image), torch.from_numpy(mask), self.fixedFeatures[GetBasename(self.imageFiles[i], True)]
         
         toExtractor = self.extractorTransform(image=image)["image"] if self.extractorTransform else image
         return torch.from_numpy(image), torch.from_numpy(mask), torch.from_numpy(toExtractor)
