@@ -149,7 +149,7 @@ def Train(
 def Valid(
         sampler      : EDMCondSampler,
         dataloader   : DataLoader,
-        denoiser     : ModuleEMA,
+        denoiser     : ModuleEMA | PrecondUNet,
         extractor    : Extractor,
         device       : torch.device,
         saveFilename : str
@@ -173,7 +173,7 @@ def Valid(
                 "extract": extractor(toExtracts)
             },
             "uncond": {
-                "concat" : torch.zeros([B, denoiser.model.inChannel - C, H, W], device=device),
+                "concat" : torch.zeros([B, (denoiser.model.inChannel if isinstance(denoiser, ModuleEMA) else denoiser.inChannel) - C, H, W], device=device),
                 "extract": extractor.MakeUncondTensor(B, device=device)
             }
         }

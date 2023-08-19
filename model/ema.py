@@ -6,7 +6,7 @@ from utils import *
 
 
 class ModuleEMA(nn.Module):
-    def __init__(self, model: nn.Module, beta: float = 0.9999, nStepPerUpdate: int = 1):
+    def __init__(self, model: nn.Module, beta: float = 0.99, nStepPerUpdate: int = 1):
         super().__init__()
         self.model          = deepcopy(model)
         self.beta           = beta
