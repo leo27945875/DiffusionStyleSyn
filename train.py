@@ -23,7 +23,7 @@ def Train(
         isAmp            : bool       = True,
         pUncond          : float      = 0.1, 
         nSteps           : int        = 100,
-        imageSize        : tuple      = (32, 32),
+        imageSize        : tuple      = 128,
         baseChannel      : int        = 128,
         attnChannel      : int        = 64,
         extractorName    : str        = "RN50",
@@ -44,7 +44,7 @@ def Train(
     diffusion = EDM(nSteps)
 
     # Sampler:
-    sampler = EDMCondSampler(diffusion, imageSize, device=device)
+    sampler = EDMCondSampler(diffusion, (imageSize, imageSize), device=device)
 
     # Model:
     if fixedFeatureFile:

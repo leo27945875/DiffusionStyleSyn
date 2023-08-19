@@ -36,13 +36,14 @@ class ImageLabelTrainDataset(Dataset):
             trainingTransform  : A.Compose | None               = None,
             extractorTransform : A.Compose | None               = None,
             fixedFeatures      : dict[str, torch.Tensor] | None = None,
-            nClass             : int                            = 150
+            nClass             : int                            = 150,
+            imageSize          : int                            = 128
     ):
         self.imageFiles = imageFiles
         self.labelFiles = labelFiles
         self.nClass     = nClass
 
-        self.trainingTransform  = trainingTransform or Transforms.GetTraining()
+        self.trainingTransform  = trainingTransform or Transforms.GetTraining(imageSize)
         self.extractorTransform = extractorTransform
 
         self.fixedFeatures = fixedFeatures
@@ -80,13 +81,14 @@ class ImageLabelTestDataset(Dataset):
             testingTransform   : A.Compose | None               = None,
             extractorTransform : A.Compose | None               = None,
             fixedFeatures      : dict[str, torch.Tensor] | None = None,
-            nClass             : int                            = 150
+            nClass             : int                            = 150,
+            imageSize          : int                            = 128
     ):
         self.imageFiles = imageFiles
         self.labelFiles = labelFiles
         self.nClass     = nClass
 
-        self.testingTransform   = testingTransform or Transforms.GetTesting()
+        self.testingTransform   = testingTransform or Transforms.GetTesting(imageSize)
         self.extractorTransform = extractorTransform
 
         self.fixedFeatures = fixedFeatures
@@ -126,7 +128,8 @@ def MakeDatasets(
         trainTransform     : A.Compose | None = None,
         validTransform     : A.Compose | None = None,
         extractorTransform : A.Compose | None = None,
-        fixedFeatureFile   : str | None       = None
+        fixedFeatureFile   : str | None       = None,
+        imageSize          : int              = 128
 ):  
     if fixedFeatureFile:
         fixedFeatureDict = torch.load(fixedFeatureFile, map_location="cpu")
@@ -152,7 +155,8 @@ def MakeDatasets(
         labelFiles         = trainLabelFiles,
         trainingTransform  = trainTransform,
         extractorTransform = extractorTransform,
-        fixedFeatures      = fixedFeatureTrainDict
+        fixedFeatures      = fixedFeatureTrainDict,
+        imageSize          = imageSize
     )
 
     validImageFiles = [f for f in glob.glob(f"{imageFolder}/*.jpg") if GetBasename(f, True) in validNames]
@@ -162,7 +166,8 @@ def MakeDatasets(
         labelFiles         = validLabelFiles,
         testingTransform   = validTransform,
         extractorTransform = extractorTransform,
-        fixedFeatures      = fixedFeatureValidDict
+        fixedFeatures      = fixedFeatureValidDict,
+        imageSize          = imageSize
     )
 
     return trainset, validset
