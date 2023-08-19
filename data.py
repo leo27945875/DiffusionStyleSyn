@@ -133,7 +133,7 @@ def MakeDatasets(
 ):  
     if fixedFeatureFile:
         fixedFeatureDict = torch.load(fixedFeatureFile, map_location="cpu")
-        fixedFeatureNames, fixedFeatureTensors = fixedFeatureDict["filenames"], fixedFeatureDict["features"]
+        fixedFeatureNames, fixedFeatureTensors = fixedFeatureDict["filenames"], fixedFeatureDict["features"].float()
         
         fixedFeatureValidMask = torch.tensor([(name in validNames) for name in fixedFeatureNames])
         fixedFeatureTrains = fixedFeatureTensors[torch.logical_not(fixedFeatureValidMask)]
