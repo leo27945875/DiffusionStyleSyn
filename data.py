@@ -2,6 +2,7 @@ import glob
 import cv2
 import numpy as np
 from itertools import product
+from einops import rearrange
 
 import albumentations as A
 
@@ -52,10 +53,18 @@ class ImageLabelTrainDataset(Dataset):
         image, mask = concat["image"], concat["mask"]
 
         if self.fixedFeatures:
-            return torch.from_numpy(image), torch.from_numpy(mask), self.fixedFeatures[GetBasename(self.imageFiles[i], True)]
+            return (
+                rearrange(torch.from_numpy(image), "h w c -> c h w"), 
+                rearrange(torch.from_numpy(mask ), "h w -> 1 h w"  ), 
+                self.fixedFeatures[GetBasename(self.imageFiles[i], True)]
+            )
         
         toExtractor = self.extractorTransform(image=image)["image"] if self.extractorTransform else image
-        return torch.from_numpy(image), torch.from_numpy(mask), torch.from_numpy(toExtractor)
+        return (
+            rearrange(torch.from_numpy(image      ), "h w c -> c h w"), 
+            rearrange(torch.from_numpy(mask       ), "h w -> 1 h w"), 
+            rearrange(torch.from_numpy(toExtractor), "h w c -> c h w")
+        )
 
     def __len__(self):
         return len(self.imageFiles)
