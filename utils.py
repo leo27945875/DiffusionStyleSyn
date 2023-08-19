@@ -67,7 +67,7 @@ def LoadCheckpoint(filename, model, extractor=None, ema=None, optimizer=None, sc
         ema.load_state_dict(ckpt["ema"])
 
     if not isOnlyLoadWeight:
-        if optimizer and ckpt["scheduler"]: optimizer.load_state_dict(ckpt["optimizer"])
+        if optimizer and ckpt["optimizer"]: optimizer.load_state_dict(ckpt["optimizer"])
         if scheduler and ckpt["scheduler"]: scheduler.load_state_dict(ckpt["scheduler"])
         if scaler    and ckpt["scaler"   ]: scaler   .load_state_dict(ckpt["scaler"   ])
         if targetNet and ckpt["targetNet"]: targetNet.load_state_dict(ckpt["targetNet"])

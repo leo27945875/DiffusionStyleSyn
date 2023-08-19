@@ -28,7 +28,7 @@ def Train(
         attnChannel      : int        = 64,
         extractorName    : str        = "RN50",
         nClass           : int        = 150,
-        ckptFile         : str        = "save/EDM_Epoch10.pth",
+        ckptFile         : str        = None,
         isValidFirst     : bool       = True,
         isCompile        : bool       = False,
         isFixExtractor   : bool       = True,
@@ -131,7 +131,7 @@ def Train(
 
         # Checkpoint:
         if epoch % ckptFreq == 0:
-            SaveCheckpoint(epoch, f"./save/EDM_Epoch{epoch}.pth", denoiser, ema, optimizer, None, scaler)
+            SaveCheckpoint(epoch, f"./save/EDM_Epoch{epoch}.pth", denoiser, extractor, ema, optimizer, None, scaler)
 
         # Validation:
         if epoch % validFreq == 0:
