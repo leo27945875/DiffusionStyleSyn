@@ -105,7 +105,7 @@ class ImageLabelTestDataset(Dataset):
             return (
                 rearrange(torch.from_numpy(image), "h w c -> c h w"), 
                 MaskToOnehot(torch.from_numpy(mask).long(), self.nClass), 
-                self.fixedFeatures[GetBasename(self.imageFiles[i], True)]
+                self.fixedFeatures[GetBasename(imageFile, True)]
             )
         
         toExtractor = self.extractorTransform(image=image)["image"] if self.extractorTransform else image
