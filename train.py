@@ -48,9 +48,9 @@ def Train(
 
     # Model:
     if fixedFeatureFile:
-        extractor = ExtractorPlaceholder(backbone=extractorName).to(device)
+        extractor = ExtractorPlaceholder(backbone=extractorName)
     else:
-        extractor = VisualExtractor(backbone=extractorName).to(device)
+        extractor = VisualExtractor(backbone=extractorName)
 
     denoiser = PrecondUNet(
         GetPrecondSigmas                      = diffusion.Precondition,
@@ -65,11 +65,11 @@ def Train(
         class_embeddings_concat               = True,
         cross_attention_dim                   = (baseChannel, baseChannel * 2, baseChannel * 3, baseChannel * 4),
         projection_class_embeddings_input_dim = extractor.outChannel
-    ).to(device)
+    )
 
     optimizer = RAdam(denoiser.parameters(), lr=lr)
     scaler    = torch.cuda.amp.GradScaler(enabled=isAmp)
-    ema       = ModuleEMA(denoiser, beta=0.9999, nStepPerUpdate=1).to(device)
+    ema       = ModuleEMA(denoiser, beta=0.9999, nStepPerUpdate=1)
 
     if isCompile:
         torch.compile(extractor)
@@ -79,6 +79,10 @@ def Train(
     if isFixExtractor:
         extractor.requires_grad_(False)
         extractor.eval()
+    
+    denoiser.to(device)
+    extractor.to(device)
+    ema.cpu()
 
     # Data:
     trainset, validset = MakeDatasets(
@@ -154,6 +158,10 @@ def Valid(
         device       : torch.device,
         saveFilename : str
 ):
+    isDenosierEMA = isinstance(denoiser, ModuleEMA)
+    if isDenosierEMA:
+        denoiser.to(device)
+
     isDenoiserTraining  = denoiser .training
     isExtractorTraining = extractor.training
     denoiser .eval()
@@ -173,7 +181,7 @@ def Valid(
                 "extract": extractor(toExtracts)
             },
             "uncond": {
-                "concat" : torch.zeros([B, (denoiser.model.inChannel if isinstance(denoiser, ModuleEMA) else denoiser.inChannel) - C, H, W], device=device),
+                "concat" : torch.zeros([B, (denoiser.model.inChannel if isDenosierEMA else denoiser.inChannel) - C, H, W], device=device),
                 "extract": extractor.MakeUncondTensor(B, device=device)
             }
         }
@@ -189,6 +197,8 @@ def Valid(
         denoiser.train()
     if isExtractorTraining: 
         extractor.train()
+    if isDenosierEMA:
+        denoiser.cpu()
 
 
 def GetLoss(
