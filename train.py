@@ -2,7 +2,6 @@ import torch
 from torch.optim       import RAdam
 from torch.utils.data  import DataLoader
 from torchvision.utils import make_grid, save_image
-from ema_pytorch       import EMA
 
 import random
 
@@ -70,7 +69,7 @@ def Train(
 
     optimizer = RAdam(denoiser.parameters(), lr=lr)
     scaler    = torch.cuda.amp.GradScaler(enabled=isAmp)
-    ema       = EMA(denoiser, beta=0.995)
+    ema       = ModuleEMA(denoiser)
 
     if isCompile:
         torch.compile(extractor)
@@ -117,11 +116,9 @@ def Train(
         for batch, (images, masks, toExtracts) in enumerate(trainloader, 1):
 
             if random.random() < pUncond:
-                images, masks, toExtracts = images.to(device), None, None
-            else:
-                images, masks, toExtracts = images.to(device), masks.to(device), toExtracts.to(device)
+                images, masks, toExtracts = images, None, None
             
-            loss = GetLoss(denoiser, extractor, diffusion, images, masks, toExtracts, gradAccum, isAmp)
+            loss = GetLoss(denoiser, extractor, diffusion, images, masks, toExtracts, gradAccum, isAmp, device)
             scaler.scale(loss).backward()
             if batch % gradAccum == 0:
                 scaler.step(optimizer)
@@ -210,11 +207,15 @@ def GetLoss(
         masks      : torch.Tensor | None,
         toExtracts : torch.Tensor | None,
         gradAccum  : int,
-        isAmp      : bool
+        isAmp      : bool,
+        device     : torch.device
 ) -> torch.Tensor:
 
-    device     = images.device
     B, C, H, W = images.size()
+
+    images = images.to(device)
+    if masks      is not None: masks      = masks     .to(device)
+    if toExtracts is not None: toExtracts = toExtracts.to(device)
     
     with torch.cuda.amp.autocast(enabled=isAmp):
 
