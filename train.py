@@ -206,7 +206,7 @@ def GetLoss(
     
     with torch.cuda.amp.autocast(enabled=isAmp):
 
-        sigmas = diffusion.TimeToSigma(diffusion.SampleTimes(device=device))
+        sigmas = diffusion.TimeToSigma(diffusion.SampleTimes(B, device=device))
 
         if masks is None:
             masks = torch.zeros([B, denoiser.inChannel - C, H, W], device=device)
