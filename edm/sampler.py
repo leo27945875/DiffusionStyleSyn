@@ -39,7 +39,7 @@ class EDMSampler:
     
     def Run(self, denoiser: PrecondUNet, batchSize: int, saveFilename: str = None, denoiseArgs: dict = {}) -> torch.Tensor:
         t1  = self.diffusion.IndexToSigma(0)
-        img = self.SampleNoises(batchSize, std=t0)
+        img = self.SampleNoises(batchSize, std=t1)
         for i in trange(self.timeRange):
             t0 = t1
             gamma = self.GetGamma(t0)
