@@ -29,7 +29,7 @@ def Train(
         extractorName    : str        = "RN50",
         nClass           : int        = 150,
         ckptFile         : str        = None,
-        isValidFirst     : bool       = False,
+        isValidFirst     : bool       = True,
         isCompile        : bool       = False,
         isFixExtractor   : bool       = True,
         fixedFeatureFile : str | None = "data/feature/ADE20K-outdoor_Features.pth"
