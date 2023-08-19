@@ -30,6 +30,7 @@ def Train(
         nClass           : int        = 150,
         ckptFile         : str        = None,
         isValidFirst     : bool       = False,
+        isValidEMA       : bool       = True,
         isCompile        : bool       = False,
         isFixExtractor   : bool       = True,
         fixedFeatureFile : str | None = "data/feature/ADE20K-outdoor_Features.pth"
@@ -103,7 +104,7 @@ def Train(
         Valid(
             sampler      = sampler,
             dataloader   = validloader,
-            denoiser     = ema,
+            denoiser     = ema if isValidEMA else denoiser,
             extractor    = extractor,
             device       = device, 
             saveFilename = f"./visual/EDM_Valid_Check.png"
@@ -140,7 +141,7 @@ def Train(
             Valid(
                 sampler      = sampler,
                 dataloader   = validloader,
-                denoiser     = ema,
+                denoiser     = ema if isValidEMA else denoiser,
                 extractor    = extractor,
                 device       = device, 
                 saveFilename = f"./visual/EDM_Epoch{epoch}.png"
