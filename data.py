@@ -25,7 +25,7 @@ class Transforms:
         return A.Compose([
             A.CenterCrop(imageSize, imageSize),
             A.Normalize([0.5] * imageChannel, [0.5] * imageChannel, max_pixel_value=255.),
-        ])
+        ], is_check_shapes=False)
 
 
 class ImageLabelTrainDataset(Dataset):
@@ -166,8 +166,3 @@ def MakeDatasets(
     )
 
     return trainset, validset
-
-
-if __name__ == '__main__':
-
-    MakeDatasets(fixedFeatureFile="data/feature/ADE20K-outdoor_Features.pth")
