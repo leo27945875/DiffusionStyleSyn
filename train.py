@@ -63,6 +63,7 @@ def Train(
         resnet_time_scale_shift               = "ada_group",          # "default", "scale_shift", "ada_group", "spatial"
         class_embed_type                      = "simple_projection",
         class_embeddings_concat               = True,
+        cross_attention_dim                   = (baseChannel, baseChannel * 2, baseChannel * 3, baseChannel * 4),
         projection_class_embeddings_input_dim = extractor.outChannel
     ).to(device)
 
