@@ -24,7 +24,7 @@ class Extractor(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         raise NotImplementedError
     
-    def GetPreprocess(self) -> A.Compose | None:
+    def GetPreprocess(self, isFromNormalized: bool = False) -> A.Compose | None:
         raise NotImplementedError
     
     def MakeUncondTensor(self, batchSize: int, device: torch.device = torch.device("cpu")) -> torch.Tensor:
@@ -49,7 +49,7 @@ class ExtractorPlaceholder(Extractor):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return x
     
-    def GetPreprocess(self) -> A.Compose:
+    def GetPreprocess(self, isFromNormalized: bool = False) -> A.Compose:
         return None
 
     def MakeUncondTensor(self, batchSize: int, device: torch.device = torch.device("cpu")) -> torch.Tensor:
