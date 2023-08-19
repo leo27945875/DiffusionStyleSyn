@@ -193,7 +193,7 @@ def Valid(
 
 def GetLoss(
         denoiser   : PrecondUNet,
-        extractor  : VisualExtractor,
+        extractor  : Extractor,
         diffusion  : EDM,
         images     : torch.Tensor,
         masks      : torch.Tensor | None,
