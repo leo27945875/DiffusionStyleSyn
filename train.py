@@ -214,7 +214,7 @@ def GetLoss(
         if toExtracts is None:
             style = extractor.MakeUncondTensor(B, device)
         else:
-            style = extractor(images)
+            style = extractor(toExtracts)
         
         x = diffusion.AddNoise(images, sigmas)
         x = torch.cat([x, masks], dim=1)
