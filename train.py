@@ -28,7 +28,7 @@ def Train(
         attnChannel      : int        = 64,
         extractorName    : str        = "RN50",
         nClass           : int        = 150,
-        ckptFile         : str        = None,
+        ckptFile         : str        = "save/EDM_Epoch10.pth",
         isValidFirst     : bool       = True,
         isCompile        : bool       = False,
         isFixExtractor   : bool       = True,
@@ -99,7 +99,7 @@ def Train(
         Valid(
             sampler      = sampler,
             dataloader   = validloader,
-            denoiser     = ema,
+            denoiser     = denoiser,
             extractor    = extractor,
             device       = device, 
             saveFilename = f"./visual/EDM_Valid_Check.png"
@@ -138,7 +138,7 @@ def Train(
             Valid(
                 sampler      = sampler,
                 dataloader   = validloader,
-                denoiser     = ema,
+                denoiser     = denoiser,
                 extractor    = extractor,
                 device       = device, 
                 saveFilename = f"./visual/EDM_Epoch{epoch}.png"
