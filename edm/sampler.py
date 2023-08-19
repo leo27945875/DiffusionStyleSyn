@@ -85,7 +85,6 @@ class EDMCondSampler(EDMSampler):
     def __init__(
             self,
             diffusion    : EDM,
-            batchSize    : int                 = 1,
             imageSize    : tuple[int, int]     = (32, 32),
             sChurn       : float               = 40., 
             sNoise       : float               = 1.003, 
@@ -95,9 +94,8 @@ class EDMCondSampler(EDMSampler):
             wCond        : float               = 0.1,
             rescalePhi   : float | None        = None,
             device       : torch.device        = torch.device("cpu"),
-            nPlotRow     : int | None          = None
         ) -> None:
-        super().__init__(diffusion, batchSize, imageSize, sChurn, sNoise, st, isStochastic, isThreshold, device, nPlotRow)
+        super().__init__(diffusion, imageSize, sChurn, sNoise, st, isStochastic, isThreshold, device)
         self.wCond      = wCond
         self.rescalePhi = rescalePhi
 

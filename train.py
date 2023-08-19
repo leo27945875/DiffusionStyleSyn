@@ -44,7 +44,7 @@ def Train(
     diffusion = EDM(nSteps)
 
     # Sampler:
-    sampler = EDMCondSampler(diffusion, device=device)
+    sampler = EDMCondSampler(diffusion, imageSize, device=device)
 
     # Model:
     if fixedFeatureFile:
