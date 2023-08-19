@@ -132,7 +132,7 @@ def MakeDatasets(
     trainset = ImageLabelTrainDataset(
         imageFiles         = [f for f in glob.glob(f"{imageFolder}/*.jpg") if GetBasename(f) not in validImages],
         labelFiles         = [f for f in glob.glob(f"{labelFolder}/*.png") if GetBasename(f) not in validLabels],
-        trainTransform     = trainTransform,
+        trainingTransform  = trainTransform,
         extractorTransform = extractorTransform,
         fixedFeatures      = fixedFeatureTrainDict
     )
