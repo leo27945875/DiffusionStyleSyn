@@ -2,6 +2,7 @@ import torch
 from torch.optim       import RAdam
 from torch.utils.data  import DataLoader
 from torchvision.utils import make_grid, save_image
+from ema_pytorch       import EMA
 
 import random
 
@@ -69,7 +70,7 @@ def Train(
 
     optimizer = RAdam(denoiser.parameters(), lr=lr)
     scaler    = torch.cuda.amp.GradScaler(enabled=isAmp)
-    ema       = ModuleEMA(denoiser, beta=0.9999, nStepPerUpdate=1)
+    ema       = EMA(denoiser, beta=0.995)
 
     if isCompile:
         torch.compile(extractor)
