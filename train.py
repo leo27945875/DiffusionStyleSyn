@@ -69,7 +69,7 @@ def Train(
 
     optimizer = RAdam(denoiser.parameters(), lr=lr)
     scaler    = torch.cuda.amp.GradScaler(enabled=isAmp)
-    ema       = ModuleEMA(denoiser, beta=0.9999, nStepPerUpdate=1)
+    ema       = ModuleEMA(denoiser, beta=0.9999, nStepPerUpdate=1).to(device)
 
     if isCompile:
         torch.compile(extractor)
