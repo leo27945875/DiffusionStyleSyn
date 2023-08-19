@@ -99,7 +99,7 @@ def Train(
         Valid(
             sampler      = sampler,
             dataloader   = validloader,
-            denoiser     = denoiser,
+            denoiser     = ema,
             extractor    = extractor,
             device       = device, 
             saveFilename = f"./visual/EDM_Valid_Check.png"
@@ -138,7 +138,7 @@ def Train(
             Valid(
                 sampler      = sampler,
                 dataloader   = validloader,
-                denoiser     = denoiser,
+                denoiser     = ema,
                 extractor    = extractor,
                 device       = device, 
                 saveFilename = f"./visual/EDM_Epoch{epoch}.png"
