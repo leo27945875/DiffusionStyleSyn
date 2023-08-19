@@ -1,6 +1,6 @@
 import torch
 
-from diffusers import UNet2DConditionModel, UNet2DModel
+from diffusers import UNet2DConditionModel
 
 from typing import Union
 
@@ -28,5 +28,5 @@ class PrecondUNet(UNet2DConditionModel):
         ) -> torch.Tensor:
 
         cSkip, cOut, cIn, cNoise = self.GetPrecondSigmas(timestep)
-        modelOut = super().forward(cIn * sample, cNoise, None, class_labels=extract_feature)
+        modelOut = super().forward(cIn * sample, cNoise, None, class_labels=extract_feature).sample
         return cSkip * sample + cOut * modelOut
