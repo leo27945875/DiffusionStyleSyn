@@ -29,4 +29,4 @@ class PrecondUNet(UNet2DConditionModel):
 
         cSkip, cOut, cIn, cNoise = self.GetPrecondSigmas(timestep)
         modelOut = super().forward(cIn * sample, cNoise, None, class_labels=extract_feature).sample
-        return cSkip * sample + cOut * modelOut
+        return cSkip * sample[:, :3] + cOut * modelOut
