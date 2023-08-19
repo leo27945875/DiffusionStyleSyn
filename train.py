@@ -177,7 +177,7 @@ def Valid(
                 "extract": extractor.MakeUncondTensor(B, device=device)
             }
         }
-        batchRes   = sampler.Run(denoiser, None, denoiseArgs)
+        batchRes   = sampler.Run(denoiser, B, None, denoiseArgs)
         generateds = DefaultConcatTensor(generateds, batchRes)
     
     save_image(
