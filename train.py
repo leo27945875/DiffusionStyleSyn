@@ -215,6 +215,7 @@ def GetLoss(
 
     images = images.to(device)
     if masks      is not None: masks      = masks     .to(device)
+    if toExtracts is not None: toExtracts = toExtracts.to(device)
     
     with torch.cuda.amp.autocast(enabled=isAmp):
 
