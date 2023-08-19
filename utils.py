@@ -105,7 +105,7 @@ def SampleNoises(size, device="cpu"):
 def InterpolateParams(model0: torch.nn.Module, model1: torch.nn.Module, ratio: float) -> None:
     for (name0, param0), (name1, param1) in zip(model0.named_parameters(), model1.named_parameters()):
         assert name0 == name1, "[InterpolateParams] The name of two parameters are not consistant."
-        param0.data.lerp_(param1.data, 1. - ratio)
+        param0.data.lerp_(param1.data.to(param0.device), 1. - ratio)
 
 
 def MaskToOnehot(mask: torch.Tensor, nClass: int):
