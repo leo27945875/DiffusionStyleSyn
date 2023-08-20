@@ -32,7 +32,7 @@ class Extractor(nn.Module):
     
 
 class ExtractorPlaceholder(Extractor):
-    def __init__(self, backbone: str = "RN50"):
+    def __init__(self, backbone: str = "ViT-B/32"):
         super().__init__()
         net = clip.load(backbone)[0].visual
         self.__inChannel  = net.conv1.weight.size(1)
@@ -57,7 +57,7 @@ class ExtractorPlaceholder(Extractor):
     
 
 class VisualExtractor(Extractor):
-    def __init__(self, backbone: str = "RN50"):
+    def __init__(self, backbone: str = "ViT-B/32"):
         super().__init__()
         self.net = clip.load(backbone)[0].visual
     

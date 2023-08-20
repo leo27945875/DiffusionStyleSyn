@@ -1,8 +1,5 @@
-import albumentations as A
-import numpy as np
-import torch
-import torch.nn as nn
+import clip
 
-a = torch.randn(10, 10, 3)
-b = a.to("cuda")
-print(a.device, b.device)
+
+net = clip.load("ViT-B/32")[0]
+print(net.visual.input_resolution)

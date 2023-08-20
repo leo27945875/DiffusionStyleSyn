@@ -122,16 +122,19 @@ class ImageLabelTestDataset(Dataset):
 
 
 def MakeDatasets(
-        imageFolder        : str              = "data/image",
-        labelFolder        : str              = "data/mask",
+        dataFolder         : str              = "data",
         validNames         : list[str]        = ["ADE_train_00000004", "ADE_train_00000191", "ADE_train_00000554", "ADE_train_00000555"],
         trainTransform     : A.Compose | None = None,
         validTransform     : A.Compose | None = None,
         extractorTransform : A.Compose | None = None,
-        fixedFeatureFile   : str | None       = None,
-        imageSize          : int              = 128
+        isUseFixFeature    : bool             = True,
+        imageSize          : int              = 192
 ):  
-    if fixedFeatureFile:
+    imageFolder = f"{dataFolder}/image"
+    labelFolder = f"{dataFolder}/mask"
+
+    if isUseFixFeature:
+        fixedFeatureFile = f"{dataFolder}/feature/ADE20K-outdoor_Features.pth"
         fixedFeatureDict = torch.load(fixedFeatureFile, map_location="cpu")
         fixedFeatureNames, fixedFeatureTensors = fixedFeatureDict["filenames"], fixedFeatureDict["features"].float()
         

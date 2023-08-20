@@ -1,3 +1,5 @@
-data/*
-save/*
+data
+data_64
+data_80
+save
 __pycache__

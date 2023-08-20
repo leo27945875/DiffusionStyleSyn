@@ -23,7 +23,7 @@ def Train(
         isAmp            : bool       = True,
         pUncond          : float      = 0.1, 
         nSteps           : int        = 50,
-        imageSize        : tuple      = 128,
+        imageSize        : tuple      = 64,
         baseChannel      : int        = 128,
         attnChannel      : int        = 16,
         extractorName    : str        = "RN50",
@@ -33,7 +33,8 @@ def Train(
         isValidEMA       : bool       = True,
         isCompile        : bool       = False,
         isFixExtractor   : bool       = True,
-        fixedFeatureFile : str | None = "data/feature/ADE20K-outdoor_Features.pth"
+        isUseFixFeature  : bool       = True,    
+        dataFolder       : str        = "data_80",
 ):
     # Random seed:
     SeedEverything(seed)
@@ -48,7 +49,7 @@ def Train(
     sampler = EDMCondSampler(diffusion, (imageSize, imageSize), device=device)
 
     # Model:
-    if fixedFeatureFile:
+    if isUseFixFeature:
         extractor = ExtractorPlaceholder(backbone=extractorName)
     else:
         extractor = VisualExtractor(backbone=extractorName)
@@ -87,8 +88,10 @@ def Train(
 
     # Data:
     trainset, validset = MakeDatasets(
+        dataFolder         = dataFolder,
+        imageSize          = imageSize,
         extractorTransform = extractor.GetPreprocess(isFromNormalized=True), 
-        fixedFeatureFile   = fixedFeatureFile
+        isUseFixFeature    = isUseFixFeature
     )
     trainloader = DataLoader(trainset, batchSize // gradAccum, True, pin_memory=True, num_workers=nWorker)
     validloader = DataLoader(validset, len(validset), False, pin_memory=True)
