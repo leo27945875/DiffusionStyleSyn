@@ -19,7 +19,7 @@ def Train(
         lr               : float      = 2e-4,
         nWorker          : int        = 8,
         validFreq        : int        = 2,
-        ckptFreq         : int        = 2,
+        ckptFreq         : int        = 10,
         isAmp            : bool       = True,
         pUncond          : float      = 0.1, 
         nSteps           : int        = 50,
