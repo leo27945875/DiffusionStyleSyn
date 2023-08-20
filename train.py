@@ -14,7 +14,7 @@ from utils import *
 def Train(
         seed             : int        = 0,
         nEpoch           : int        = 1000,
-        batchSize        : int        = 256,
+        batchSize        : int        = 320,
         gradAccum        : int        = 8,
         lr               : float      = 2e-4,
         nWorker          : int        = 8,
