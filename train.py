@@ -26,7 +26,7 @@ def Train(
         imageSize        : tuple      = 64,
         baseChannel      : int        = 128,
         attnChannel      : int        = 16,
-        extractorName    : str        = "RN50",
+        extractorName    : str        = "ViT-B/32",
         nClass           : int        = 150,
         ckptFile         : str        = None,
         isValidFirst     : bool       = False,

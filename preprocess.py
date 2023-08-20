@@ -68,7 +68,7 @@ def ResizeDataset(srcFolder: str = "data", targetSize: int = 80):
             _W = targetSize
             _H = round(H * (targetSize / W))
 
-        dstImage, dstMask = cv2.resize(srcImage, (_W, _H), interpolation=cv2.INTER_CUBIC), cv2.resize(srcMask, (_W, _H), interpolation=cv2.INTER_CUBIC)
+        dstImage, dstMask = cv2.resize(srcImage, (_W, _H), interpolation=cv2.INTER_CUBIC), cv2.resize(srcMask, (_W, _H), interpolation=cv2.INTER_NEAREST)
 
         dstImageFile, dstMaskFile = ChangeFolder(srcImageFile, imageDstFolder), ChangeFolder(srcMaskFile, maskDstFolder)
         cv2.imwrite(dstImageFile, dstImage)
@@ -79,5 +79,5 @@ def ResizeDataset(srcFolder: str = "data", targetSize: int = 80):
 
 if __name__ == "__main__":
 
-    # ResizeDataset()
+    ResizeDataset()
     ExtractAndSaveVisualFeatures()
