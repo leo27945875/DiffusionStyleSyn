@@ -24,7 +24,7 @@ def Train(
         pUncond          : float      = 0.1, 
         nSteps           : int        = 50,
         imageSize        : tuple      = 64,
-        baseChannel      : int        = 128,
+        baseChannel      : int        = 160,
         attnChannel      : int        = 16,
         extractorName    : str        = "ViT-B/32",
         nClass           : int        = 150,
