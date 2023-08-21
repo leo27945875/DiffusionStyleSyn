@@ -91,7 +91,7 @@ class EDMCondSampler(EDMSampler):
             st           : tuple[float, float] = (0., float("inf")),
             isStochastic : bool                = True,
             isThreshold  : bool                = False,
-            wCond        : float               = 0.1,
+            wCond        : float               = 1.,
             rescalePhi   : float | None        = None,
             device       : torch.device        = torch.device("cpu"),
         ) -> None:

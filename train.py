@@ -2,6 +2,7 @@ import torch
 from torch.optim       import RAdam
 from torch.utils.data  import DataLoader
 from torchvision.utils import make_grid, save_image
+from lion_pytorch      import Lion
 
 import random
 
@@ -13,23 +14,24 @@ from utils import *
 
 def Train(
         seed             : int        = 0,
-        nEpoch           : int        = 1000,
+        nEpoch           : int        = 0,
         batchSize        : int        = 320,
         gradAccum        : int        = 8,
-        lr               : float      = 2e-4,
+        lr               : float      = 2e-5,
         nWorker          : int        = 8,
         validFreq        : int        = 2,
         ckptFreq         : int        = 10,
         isAmp            : bool       = True,
         pUncond          : float      = 0.1, 
-        nSteps           : int        = 50,
+        nSteps           : int        = 512,
         imageSize        : tuple      = 64,
         baseChannel      : int        = 192,
         attnChannel      : int        = 16,
         extractorName    : str        = "ViT-B/32",
         nClass           : int        = 150,
-        ckptFile         : str        = None,
-        isValidFirst     : bool       = False,
+        ckptFile         : str        = "save/EDM_64/EDM_Epoch1000.pth",
+        isOnlyLoadWeight : bool       = True,
+        isValidFirst     : bool       = True,
         isValidEMA       : bool       = True,
         isCompile        : bool       = False,
         isFixExtractor   : bool       = True,
@@ -69,7 +71,7 @@ def Train(
         projection_class_embeddings_input_dim = extractor.outChannel
     )
 
-    optimizer = RAdam(denoiser.parameters(), lr=lr)
+    optimizer = Lion(denoiser.parameters(), lr=lr)
     scaler    = torch.cuda.amp.GradScaler(enabled=isAmp)
     ema       = ModuleEMA(denoiser)
 
@@ -98,7 +100,7 @@ def Train(
 
     # Load checkpoint:
     if ckptFile:
-        resumeEpoch = LoadCheckpoint(ckptFile, denoiser, extractor, ema, optimizer, None, scaler)
+        resumeEpoch = LoadCheckpoint(ckptFile, denoiser, extractor, ema, optimizer, None, scaler, None, isOnlyLoadWeight)
     else:
         resumeEpoch = 0
     
