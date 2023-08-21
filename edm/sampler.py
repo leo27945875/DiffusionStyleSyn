@@ -13,7 +13,7 @@ class EDMSampler:
     def __init__(
             self,
             diffusion    : EDM,
-            imageSize    : tuple[int, int]     = (32, 32),
+            imageSize    : tuple[int, int]     = (128, 128),
             sChurn       : float               = 40., 
             sNoise       : float               = 1.003, 
             st           : tuple[float, float] = (0., float("inf")), 
@@ -85,7 +85,7 @@ class EDMCondSampler(EDMSampler):
     def __init__(
             self,
             diffusion    : EDM,
-            imageSize    : tuple[int, int]     = (32, 32),
+            imageSize    : tuple[int, int]     = (128, 128),
             sChurn       : float               = 40., 
             sNoise       : float               = 1.003, 
             st           : tuple[float, float] = (0., float("inf")),

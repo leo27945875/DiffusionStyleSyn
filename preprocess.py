@@ -10,8 +10,8 @@ from model import VisualExtractor
 
 
 def ExtractAndSaveVisualFeatures(
-        imageFolder  : str = "data_80/image",
-        saveFolder   : str = "data_80/feature",
+        imageFolder  : str = "data/image",
+        saveFolder   : str = "data/feature",
         saveFilename : str = "ADE20K-outdoor_Features.pth"
 ):
     
@@ -79,5 +79,5 @@ def ResizeDataset(srcFolder: str = "data", targetSize: int = 80):
 
 if __name__ == "__main__":
 
-    ResizeDataset()
+    # ResizeDataset()
     ExtractAndSaveVisualFeatures()
