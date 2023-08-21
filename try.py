@@ -1,5 +1,6 @@
-import clip
+import torch
+import torch.nn.functional as F
 
-
-net = clip.load("ViT-B/32")[0]
-print(net.visual.input_resolution)
+a = torch.randn(8, 256)
+zq = F.interpolate(a, size=(32, 32), mode="nearest")
+print(zq.shape)
