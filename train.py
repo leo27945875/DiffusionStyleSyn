@@ -133,7 +133,10 @@ def Train(
                 ema.update()
             
             losses.Record(loss.item())
-            print(f"\r| Epoch {epoch} | Batch {batch} | Loss {losses.Mean() :.6f}", end="")
+            try:
+                print(f"\r| Epoch {epoch} | Batch {batch} | Loss {losses.Mean() :.6f}", end="")
+            except ZeroDivisionError:
+                print(f"\r| Epoch {epoch} | Batch {batch} | Loss (Error)", end="")
         
         print("")
 
