@@ -71,7 +71,7 @@ def Train(
         projection_class_embeddings_input_dim = extractor.outChannel
     )
 
-    optimizer = Lion(denoiser.parameters(), lr=lr)
+    optimizer = RAdam(denoiser.parameters(), lr=lr)
     scaler    = torch.cuda.amp.GradScaler(enabled=isAmp)
     ema       = ModuleEMA(denoiser)
 
