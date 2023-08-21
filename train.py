@@ -17,7 +17,7 @@ def Train(
         nEpoch           : int        = 1000,
         batchSize        : int        = 256,
         gradAccum        : int        = 32,
-        lr               : float      = 2e-4,
+        lr               : float      = 2e-5,
         nWorker          : int        = 8,
         validFreq        : int        = 2,
         ckptFreq         : int        = 10,
@@ -26,7 +26,7 @@ def Train(
         nSteps           : int        = 100,
         imageSize        : tuple      = 128,
         baseChannel      : int        = 256,
-        attnChannel      : int        = 16,
+        attnChannel      : int        = 8,
         extractorName    : str        = "ViT-B/32",
         nClass           : int        = 150,
         ckptFile         : str        = None,
@@ -71,7 +71,7 @@ def Train(
         projection_class_embeddings_input_dim = extractor.outChannel
     )
 
-    optimizer = RAdam(denoiser.parameters(), lr=lr)
+    optimizer = Lion(denoiser.parameters(), lr=lr)
     scaler    = torch.cuda.amp.GradScaler(enabled=isAmp)
     ema       = ModuleEMA(denoiser)
 
