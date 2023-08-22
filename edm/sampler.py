@@ -23,7 +23,7 @@ class EDMSampler:
         ):
 
         self.diffusion    = diffusion
-        self.timeRange    = diffusion.timeRange
+        self.nStep        = diffusion.nStep
         self.sigmaMin     = diffusion.sigmaMin
         self.sigmaMax     = diffusion.sigmaMax
         self.rho          = diffusion.rho
@@ -35,12 +35,12 @@ class EDMSampler:
         self.device       = device
         self.isStochastic = isStochastic
         self.isThreshold  = isThreshold
-        self.gamma        = min(sChurn / self.timeRange, 2. ** 0.5 - 1.)
+        self.gamma        = min(sChurn / self.nStep, 2. ** 0.5 - 1.)
     
     def Run(self, denoiser: PrecondUNet, batchSize: int, saveFilename: str = None, denoiseArgs: dict = {}) -> torch.Tensor:
         t1  = self.diffusion.IndexToSigma(0)
         img = self.SampleNoises(batchSize, std=t1)
-        for i in trange(self.timeRange):
+        for i in trange(self.nStep):
             t0 = t1
             gamma = self.GetGamma(t0)
             if self.isStochastic and gamma != 0.:
@@ -53,7 +53,7 @@ class EDMSampler:
             d0 = (x0 - self.Denoise(denoiser, x0, th, denoiseArgs)) / th
             t1 = self.diffusion.IndexToSigma(i + 1)
             x1 = x0 + (t1 - th) * d0
-            if i != self.timeRange - 1:
+            if i != self.nStep - 1:
                 d1 = (x1 - self.Denoise(denoiser, x1, t1, denoiseArgs)) / t1
                 x1 = x0 + (t1 - th) * (d0 + d1) * 0.5
             
@@ -72,7 +72,7 @@ class EDMSampler:
         if self.isThreshold:
             return DynamicThreshold(denoiser(x, FloatToBatch(x.size(0), sigma, self.device)))
         
-        return denoiser(x, FloatToBatch(x.size(0), sigma, self.device))
+        return denoiser(x, torch.tensor(sigma, device=self.device))
     
     def GetGamma(self, sigma: float) -> float:
         return self.gamma if self.st[0] <= sigma <= self.st[1] else 0.
@@ -104,7 +104,7 @@ class EDMCondSampler(EDMSampler):
         xCond   = torch.cat([x, denoiseArgs["cond"  ]["concat"]], dim=1)
         xUncond = torch.cat([x, denoiseArgs["uncond"]["concat"]], dim=1)
 
-        sigmas = FloatToBatch(x.size(0), sigma, self.device)
+        sigmas = torch.tensor(sigma, device=self.device)
 
         condOuts   = denoiser(xCond  , sigmas, denoiseArgs["cond"  ]["extract"])
         uncondOuts = denoiser(xUncond, sigmas, denoiseArgs["uncond"]["extract"])

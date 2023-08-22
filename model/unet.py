@@ -1,13 +1,31 @@
 import torch
+import torch.nn as nn
 
 from diffusers import UNet2DConditionModel
-
-from typing import Union
 
 from type_alias import *
 
 
-class PrecondUNet(UNet2DConditionModel):
+class MyUNet(nn.Module):
+    @property
+    def inChannel(self) -> int:
+        raise NotImplementedError
+
+    @property
+    def outChannel(self) -> int:
+        raise NotImplementedError
+
+    def forward(
+            self, 
+            sample          : torch.FloatTensor,
+            sigma           : torch.Tensor,
+            extract_feature : torch.Tensor
+        ) -> torch.Tensor:
+
+        raise NotImplementedError
+
+
+class PrecondUNet(UNet2DConditionModel, MyUNet):
     def __init__(self, GetPrecondSigmas: T_Precond_Func, **super_kwargs):
         super().__init__(**super_kwargs)
         self.GetPrecondSigmas = GetPrecondSigmas
@@ -22,11 +40,11 @@ class PrecondUNet(UNet2DConditionModel):
 
     def forward(
             self, 
-            sample: torch.FloatTensor,
-            timestep: Union[torch.Tensor, float, int],
-            extract_feature: torch.Tensor
+            sample          : torch.FloatTensor,
+            sigma           : torch.Tensor,
+            extract_feature : torch.Tensor
         ) -> torch.Tensor:
 
-        cSkip, cOut, cIn, cNoise = self.GetPrecondSigmas(timestep)
+        cSkip, cOut, cIn, cNoise = self.GetPrecondSigmas(sigma)
         modelOut = super().forward(cIn * sample, cNoise, None, class_labels=extract_feature).sample
         return cSkip * sample[:, :3] + cOut * modelOut

@@ -7,36 +7,37 @@ from lion_pytorch      import Lion
 import random
 
 from data  import MakeDatasets
-from edm   import EDM, EDMCondSampler
+from edm   import EDM, EDMCondSampler, Seperate
 from model import *
 from utils import *
 
 
 def Train(
-        seed             : int        = 0,
-        nEpoch           : int        = 1000,
-        batchSize        : int        = 256,
-        gradAccum        : int        = 32,
-        lr               : float      = 2e-5,
-        nWorker          : int        = 8,
-        validFreq        : int        = 2,
-        ckptFreq         : int        = 10,
-        isAmp            : bool       = True,
-        pUncond          : float      = 0.1, 
-        nSteps           : int        = 100,
-        imageSize        : tuple      = 128,
-        baseChannel      : int        = 256,
-        attnChannel      : int        = 8,
-        extractorName    : str        = "ViT-B/32",
-        nClass           : int        = 150,
-        ckptFile         : str        = None,
-        isOnlyLoadWeight : bool       = False,
-        isValidFirst     : bool       = False,
-        isValidEMA       : bool       = True,
-        isCompile        : bool       = False,
-        isFixExtractor   : bool       = True,
-        isUseFixFeature  : bool       = True,    
-        dataFolder       : str        = "data",
+        seed             : int         = 0,
+        nEpoch           : int         = 1000,
+        batchSize        : int         = 256,
+        gradAccum        : int         = 32,
+        lr               : float       = 2e-5,
+        nWorker          : int         = 8,
+        validFreq        : int         = 2,
+        ckptFreq         : int         = 10,
+        isAmp            : bool        = True,
+        pUncond          : float       = 0.1, 
+        nStep            : int         = 100,
+        imageSize        : tuple       = 128,
+        baseChannel      : int         = 256,
+        attnChannel      : int         = 8,
+        extractorName    : str         = "ViT-B/32",
+        nClass           : int         = 150,
+        ckptFile         : str | None  = None,
+        isOnlyLoadWeight : bool        = False,
+        isValidFirst     : bool        = False,
+        isValidEMA       : bool        = True,
+        isCompile        : bool        = False,
+        isFixExtractor   : bool        = True,
+        isUseFixFeature  : bool        = True,    
+        dataFolder       : str         = "data",
+        seperateArgs     : dict | None = None       # {"nSeperate": 2, "index": 0, "otherArgs": {"sampleMode": "uniform"}}
 ):
     # Random seed:
     SeedEverything(seed)
@@ -45,7 +46,9 @@ def Train(
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     # Diffusion:
-    diffusion = EDM(nSteps)
+    diffusion = EDM(nStep)
+    if seperateArgs:
+        diffusion = Seperate(diffusion, **seperateArgs)
 
     # Sampler:
     sampler = EDMCondSampler(diffusion, (imageSize, imageSize), device=device)
