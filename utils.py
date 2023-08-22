@@ -27,14 +27,18 @@ class Metric:
         return self.val / self.num
 
 
-def SeedEverything(seed) -> None:
+def SeedEverything(seed, isFixCudnn=False) -> None:
     random.seed(seed)
     os.environ['PYTHONHASHSEED'] = str(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = True
+    if isFixCudnn:
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+    else:
+        torch.backends.cudnn.deterministic = False
+        torch.backends.cudnn.benchmark = True
 
 
 def LoadJSON(filename: str) -> dict | list:
