@@ -15,12 +15,12 @@ from utils import *
 def Train(
         seed             : int         = 0,
         nEpoch           : int         = 1000,
-        batchSize        : int         = 256,
+        batchSize        : int         = 224,
         gradAccum        : int         = 32,
         lr               : float       = 2e-5,
         nWorker          : int         = 8,
-        validFreq        : int         = 2,
-        ckptFreq         : int         = 10,
+        validFreq        : int         = 5,
+        ckptFreq         : int         = 1,
         isAmp            : bool        = True,
         pUncond          : float       = 0.1, 
         nStep            : int         = 100,
@@ -145,7 +145,7 @@ def Train(
 
         # Checkpoint:
         if epoch % ckptFreq == 0:
-            SaveCheckpoint(epoch, f"./save/EDM_Epoch{epoch}.pth", denoiser, extractor, ema, optimizer, None, scaler)
+            SaveCheckpoint(epoch, f"./save/EDM.pth", denoiser, extractor, ema, optimizer, None, scaler)
 
         # Validation:
         if epoch % validFreq == 0:
