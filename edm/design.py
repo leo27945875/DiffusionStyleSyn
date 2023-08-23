@@ -76,4 +76,4 @@ class EDM:
         cIn    = torch.sqrt(inv_sum2)
         cOut   = sigma * self.sigmaData * cIn
         cNoise = 0.25 * torch.log(sigma + 1e-44)
-        return cSkip[:, None, None, None], cOut[:, None, None, None], cIn[:, None, None, None], cNoise
+        return cSkip, cOut, cIn, cNoise

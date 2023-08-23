@@ -37,6 +37,7 @@ class EDMSampler:
         self.isThreshold  = isThreshold
         self.gamma        = min(sChurn / self.nStep, 2. ** 0.5 - 1.)
     
+    @torch.inference_mode()
     def Run(self, denoiser: PrecondUNet, batchSize: int, saveFilename: str = None, denoiseArgs: dict = {}) -> torch.Tensor:
         t1  = self.diffusion.IndexToSigma(0)
         img = self.SampleNoises(batchSize, std=t1)

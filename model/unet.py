@@ -46,5 +46,9 @@ class PrecondUNet(UNet2DConditionModel, MyUNet):
         ) -> torch.Tensor:
 
         cSkip, cOut, cIn, cNoise = self.GetPrecondSigmas(sigma)
+        if cSkip.dim() != 0: cSkip = cSkip[:, None, None, None]
+        if cOut .dim() != 0: cOut  = cOut [:, None, None, None]
+        if cIn  .dim() != 0: cIn   = cIn  [:, None, None, None]
+
         modelOut = super().forward(cIn * sample, cNoise, None, class_labels=extract_feature).sample
         return cSkip * sample[:, :3] + cOut * modelOut

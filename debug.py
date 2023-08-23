@@ -29,6 +29,14 @@ def TestSeperateDiffusion():
     plt.show()
 
 
+def TestTrySomething():
+    import torch
+
+    a = torch.tensor([3.5, 3])
+    print(a.dim())
+
+
 if __name__ == '__main__':
 
-    TestSeperateDiffusion()
+
+    TestTrySomething()
