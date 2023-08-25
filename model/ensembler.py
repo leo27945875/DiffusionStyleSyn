@@ -40,7 +40,7 @@ class Ensembler(MyUNet):
 
             ensembleList.append(denoiser)
         
-        ensembler = cls(ensembleFiles, diffusion, isSaveMode)
+        ensembler = cls(ensembleList, diffusion, isSaveMode)
         ensembler.SetTrainingIndex(trainingIdx)
         return ensembler
     
