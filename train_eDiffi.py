@@ -101,12 +101,9 @@ def Train(
         extractor = VisualExtractor(backbone=extractorName)
 
     # Ensemble:
-    assert ensembleFiles[seperateIdx] is None, f"[ensembleFiles[seperateIdx]] must be None."
-    assert all([(file is not None) for i, file in enumerate(ensembleFiles) if i != seperateIdx]), f"Files correspond to auxiliary model must not be None."
     BuildModelFunc = partial(
         BuildModel, PreconditionFunc=wholeDiffusion.Precondition, nClass=nClass, baseChannel=baseChannel, attnChannel=attnChannel, extractorOutChannel=extractor.outChannel
     )
-    
     ensembler = Ensembler.InitFromFiles(ensembleFiles, BuildModelFunc, wholeDiffusion, seperateIdx, isSaveGPUMode, not isValidEMA)
     model     = ensembler.onlineModel
     ema       = ensembler.offlineModel
