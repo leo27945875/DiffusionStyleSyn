@@ -12,12 +12,11 @@ from type_alias import *
 def Valid(
         sampler      : EDMSampler,
         dataloader   : DataLoader,
-        denoiser     : ModuleEMA | MyUNet,
+        denoiser     : MyUNet,
         extractor    : Extractor,
         device       : torch.device,
         saveFilename : str
 ):
-    isDenosierEMA       = isinstance(denoiser, ModuleEMA)
     isDenoiserTraining  = denoiser .training
     isExtractorTraining = extractor.training
     denoiser .eval()
@@ -37,7 +36,7 @@ def Valid(
                 "extract": extractor(toExtracts)
             },
             "uncond": {
-                "concat" : torch.zeros([B, (denoiser.model.inChannel if isDenosierEMA else denoiser.inChannel) - C, H, W], device=device),
+                "concat" : torch.zeros([B, denoiser.inChannel - C, H, W], device=device),
                 "extract": extractor.MakeUncondTensor(B, device=device)
             }
         }

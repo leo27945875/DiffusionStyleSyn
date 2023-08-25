@@ -2,11 +2,12 @@ import torch.nn as nn
 
 from copy import deepcopy
 
+from .unet import MyUNet
 from utils import *
 
 
-class ModuleEMA(nn.Module):
-    def __init__(self, model: nn.Module, beta: float = 0.99, nStepPerUpdate: int = 1):
+class ModuleEMA(MyUNet):
+    def __init__(self, model: MyUNet, beta: float = 0.99, nStepPerUpdate: int = 1):
         super().__init__()
         self.model          = deepcopy(model)
         self.beta           = beta
@@ -17,6 +18,14 @@ class ModuleEMA(nn.Module):
 
         self.requires_grad_(False)
         self.eval()
+    
+    @property
+    def inChannel(self) -> int:
+        return self.model.inChannel
+    
+    @property
+    def outChannel(self) -> int:
+        return self.model.outChannel
     
     def forward(self, *args, **kwargs):
         return self.model(*args, **kwargs)
