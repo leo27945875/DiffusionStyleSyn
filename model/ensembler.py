@@ -115,7 +115,8 @@ class Ensembler(MyUNet):
                 self.models[self.__lastModelIdx].cpu()
 
             model.cuda()
-            print(f"\n[Ensembler] Switched to model[{modelIdx}]")
+            if self.isShowMessage:
+                print(f"\n[Ensembler] Switched to model[{modelIdx}]")
 
         self.__lastModelIdx = modelIdx
 
