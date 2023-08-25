@@ -38,7 +38,7 @@ def BuildModel(PreconditionFunc: T_Precond_Func, nClass: int, baseChannel: int, 
 def Train(
         seed             : int         = 0,
         nEpoch           : int         = 500,
-        batchSize        : int         = 180,
+        batchSize        : int         = 192,
         gradAccum        : int         = 4,
         lr               : float       = 1e-5,
         nWorker          : int         = 8,
@@ -74,7 +74,7 @@ def Train(
     SeedEverything(seed)
 
     # File & Folder:
-    modelName    = f"eDiff-i[{seperateIdx}]"
+    modelName    = f"eDiff-i_{imageSize}[{seperateIdx}]"
     saveFolder   = f"{saveFolder}/{modelName}"
     visualFolder = f"{visualFolder}/{modelName}"
     saveCkptName = f"{saveFolder}/{modelName}.pth"
@@ -232,6 +232,31 @@ def GetLoss(
         )
         
     return loss / gradAccum
+
+
+def Main():
+
+    N_SEPERATE       = 2
+    INIT_WEIGHT_CKPT = "save/EDM_64/EDM_Epoch1000.pth"
+
+    ensembleFiles = [INIT_WEIGHT_CKPT for _ in range(N_SEPERATE)]
+
+    print("\n" + "=" * 50 + " Start training eDiff-i " + "=" * 50)
+    print(f"\nEnsemble init ckpt : [{ensembleFiles}]\n")
+
+    for i in range(N_SEPERATE):
+        print(f"\nTraining ensemble [{i}] ... ")
+        ensembleFiles[i] = Train(
+            nSeperate     = N_SEPERATE,
+            seperateIdx   = i,
+            ensembleFiles = ensembleFiles
+        )
+    
+    print("\n\nFinish training. Ckpt files :")
+    for i, file in enumerate(ensembleFiles):
+        print(f"Ensemble [{i}] : [{file}]")
+
+    print("\n")
 
 
 if __name__ == '__main__':
