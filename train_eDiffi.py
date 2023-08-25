@@ -39,7 +39,7 @@ def Train(
         seed             : int         = 0,
         nEpoch           : int         = 500,
         batchSize        : int         = 200,
-        gradAccum        : int         = 8,
+        gradAccum        : int         = 4,
         lr               : float       = 1e-5,
         nWorker          : int         = 8,
         validFreq        : int         = 5,
