@@ -104,22 +104,21 @@ def Train(
         BuildModel, PreconditionFunc=wholeDiffusion.Precondition, nClass=nClass, baseChannel=baseChannel, attnChannel=attnChannel, extractorOutChannel=extractor.outChannel
     )
     
-    ensembler = Ensembler.InitFromFiles(ensembleFiles, BuildModelFunc, wholeDiffusion, isSaveGPUMode)
-    optimizer = Lion(ensembler.parameters(), lr=lr)
+    ensembler = Ensembler.InitFromFiles(ensembleFiles, BuildModelFunc, wholeDiffusion, isSaveGPUMode, not isValidEMA)
+    model     = ensembler.onlineModel
+    ema       = ensembler.offlineModel
+
+    optimizer = Lion(model.parameters(), lr=lr)
     scaler    = torch.cuda.amp.GradScaler(enabled=isAmp)
-    ema       = ModuleEMA(ensembler[seperateIdx])
 
     if isCompile:
         torch.compile(extractor)
+        torch.compile(model)
         torch.compile(ensembler)
-        torch.compile(ema)
 
     if isFixExtractor:
         extractor.requires_grad_(False)
         extractor.eval()
-    
-    if isValidEMA:
-        ensembler.SetTestingEMA(ema)
 
     ensembler.to(device)
     extractor.to(device)
@@ -136,7 +135,7 @@ def Train(
 
     # Load checkpoint:
     if ckptFile:
-        resumeEpoch = LoadCheckpoint(ckptFile, ensembler[seperateIdx], extractor, ema, optimizer, None, scaler, None, isOnlyLoadWeight)
+        resumeEpoch = LoadCheckpoint(ckptFile, model, extractor, ema, optimizer, None, scaler, None, isOnlyLoadWeight)
     else:
         resumeEpoch = 0
     
@@ -160,7 +159,7 @@ def Train(
             if random.random() < pUncond:
                 images, masks, toExtracts = images, None, None
             
-            loss = GetLoss(ensembler[seperateIdx], extractor, trainDiffusion, images, masks, toExtracts, gradAccum, isAmp, device)
+            loss = GetLoss(model, extractor, trainDiffusion, images, masks, toExtracts, gradAccum, isAmp, device)
             scaler.scale(loss).backward()
             if batch % gradAccum == 0:
                 scaler.step(optimizer)
@@ -178,7 +177,7 @@ def Train(
 
         # Checkpoint:
         if epoch % ckptFreq == 0:
-            SaveCheckpoint(epoch, f"{saveFolder}/{modelName}.pth", ensembler[seperateIdx], extractor, ema, optimizer, None, scaler)
+            SaveCheckpoint(epoch, f"{saveFolder}/{modelName}.pth", model, extractor, ema, optimizer, None, scaler)
 
         # Validation:
         if epoch % validFreq == 0:
@@ -196,7 +195,7 @@ def Train(
 def Valid(
         sampler      : EDMCondSampler,
         dataloader   : DataLoader,
-        denoiser     : Ensembler,
+        denoiser     : MyUNet,
         extractor    : Extractor,
         device       : torch.device,
         saveFilename : str

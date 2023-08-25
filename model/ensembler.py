@@ -10,17 +10,19 @@ from utils import LoadCheckpoint
 
 
 class Ensembler(MyUNet):
-    def __init__(self, models: list[MyUNet], diffusion: EDM, isSaveMode: bool = False, trainingIdx: int | None = None):
+    def __init__(self, models: list[MyUNet], diffusion: EDM, trainingIdx: int | None = None, isSaveMode: bool = False, isTestOnlineModel: bool = False, isShowMessage: bool = True):
         super().__init__()
-        self.models     = nn.ModuleList(models)
-        self.diffusion  = diffusion
-        self.isSaveMode = isSaveMode
-        self.interval   = diffusion.nStep / len(models)
+        self.models            = nn.ModuleList(models)
+        self.diffusion         = diffusion
+        self.isSaveMode        = isSaveMode
+        self.isTestOnlineModel = isTestOnlineModel
+        self.isShowMessage     = isShowMessage
+        self.interval          = diffusion.nStep / len(models)
 
         self.__inChannel, self.__outChannel = self.__CheckConsistancy(models)
 
-        self.__trainingIdx : int | None             = trainingIdx
-        self.__testingEMA  : list[ModuleEMA] | None = None          # Using list to avoid being registered to nn.Module.
+        self.__trainingIdx : int | None          = trainingIdx
+        self.__onlineModel : list[MyUNet] | None = []          # Using list to avoid being registered to nn.Module.
 
         self.__lastModelIdx : int | None = None
         
@@ -28,21 +30,28 @@ class Ensembler(MyUNet):
             self.cpu()
     
     @classmethod
-    def InitFromFiles(cls, ensembleFiles: list[str], BuildModelFunc: Callable[[], MyUNet], diffusion: EDM, isSaveMode: bool = False) -> "Ensembler":
-        ensembleList, trainingIdx = [], None
+    def InitFromFiles(cls, ensembleFiles: list[str], BuildModelFunc: Callable[[], MyUNet], diffusion: EDM, isSaveMode: bool = False, isTestOnlineModel: bool = False, isShowMessage: bool = True) -> "Ensembler":
+        ensembleList, trainingIdx, onlineModel = [], None, None
         for i, file in enumerate(ensembleFiles):
             denoiser = BuildModelFunc()
             if file is not None:
-                LoadCheckpoint(file, ema=ModuleEMA(denoiser), isOnlyLoadWeight=True)
+                LoadCheckpoint(file, ema=denoiser, isOnlyLoadWeight=True)
             else:
-                assert trainingIdx is None, "[Ensembler] Only allow one training model in the Ensembler for now."
+                assert trainingIdx is None and onlineModel is None, "[Ensembler] Only allow one training model in the Ensembler for now."
                 trainingIdx = i
+                onlineModel = denoiser
+                denoiser    = ModuleEMA(denoiser)
 
             ensembleList.append(denoiser)
         
-        ensembler = cls(ensembleList, diffusion, isSaveMode)
-        ensembler.SetTrainingIndex(trainingIdx)
+        ensembler = cls(ensembleList, diffusion, trainingIdx, isSaveMode, isTestOnlineModel, isShowMessage)
+        ensembler.SetOnlineModel(onlineModel)
+        ensembler.requires_grad_(False)
+        ensembler.eval()
         return ensembler
+    
+    def __getitem__(self, i) -> MyUNet:
+        return self.models[i]
     
     @property
     def inChannel(self) -> int:
@@ -52,8 +61,19 @@ class Ensembler(MyUNet):
     def outChannel(self) -> int:
         return self.__outChannel
     
-    def __getitem__(self, i) -> MyUNet:
-        return self.models[i]
+    @property
+    def onlineModel(self) -> MyUNet:
+        if not self.__onlineModel:
+            return None
+        
+        return self.__onlineModel[0]
+    
+    @property
+    def offlineModel(self) -> ModuleEMA | None:
+        if self.__trainingIdx is None:
+            return None
+        
+        return self.models[self.__trainingIdx]
     
     def forward(
             self, 
@@ -64,18 +84,30 @@ class Ensembler(MyUNet):
         
         model, modelIdx = self.__ChooseModel(sigma)
 
-        if self.__testingEMA and modelIdx == self.__trainingIdx:
-            model = self.__testingEMA[0]
+        if (
+            self.isTestOnlineModel and 
+            self.__onlineModel     and 
+            modelIdx == self.__trainingIdx
+        ):
+            model = self.onlineModel
+            model.eval()
         
-        if self.isSaveMode:
-            isSwitchDevice = modelIdx != self.__lastModelIdx
-            if isSwitchDevice: model.cuda()
-            out = model(sample, sigma, extract_feature)
-            if isSwitchDevice: model.cpu()
-            return out
-        
+        isTraining = model.training
+
+        if self.isSaveMode and (modelIdx != self.__lastModelIdx):
+            if self.__lastModelIdx is not None:
+                self.models[self.__lastModelIdx].cpu()
+
+            model.cuda()
+            print(f"\n[Ensembler] Switched to model[{modelIdx}]")
+
         self.__lastModelIdx = modelIdx
-        return model(sample, sigma, extract_feature)
+
+        output = model(sample, sigma, extract_feature)
+        if isTraining: 
+            model.train()
+
+        return output
 
     def to(self, device: str | torch.device):
         if self.isSaveMode:
@@ -89,17 +121,16 @@ class Ensembler(MyUNet):
         
         return super().cuda(device)
     
-    def SetTrainingIndex(self, trainingIdx: int) -> None:
-        self.__trainingIdx = trainingIdx
-    
-    def SetTestingEMA(self, ema: ModuleEMA) -> None:
-        self.__testingEMA = [ema]
+    def SetOnlineModel(self, model: MyUNet) -> None:
+        assert model.inChannel  == self.__inChannel , f"[Ensembler.SetOnlineModel()] Found model.inChannel is not consistant."
+        assert model.outChannel == self.__outChannel, f"[Ensembler.SetOnlineModel()] Found model.outChannel is not consistant."
+        self.__onlineModel = [model]
     
     def __CheckConsistancy(self, models: list[MyUNet]) -> tuple[int, int]:
         inChannel, outChannel = models[0].inChannel, models[0].outChannel
         for model in models[1:]:
-            assert model.inChannel  == inChannel , f"[Ensembler] Found model.inChannel is not consistant."
-            assert model.outChannel == outChannel, f"[Ensembler] Found model.outChannel is not consistant."
+            assert model.inChannel  == inChannel , f"[Ensembler.__CheckConsistancy()] Found model.inChannel is not consistant."
+            assert model.outChannel == outChannel, f"[Ensembler.__CheckConsistancy()] Found model.outChannel is not consistant."
         
         return inChannel, outChannel
 
