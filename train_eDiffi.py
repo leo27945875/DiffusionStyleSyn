@@ -38,7 +38,7 @@ def BuildModel(PreconditionFunc: T_Precond_Func, nClass: int, baseChannel: int, 
 def Train(
         seed             : int         = 0,
         nEpoch           : int         = 300,
-        batchSize        : int         = 192,
+        batchSize        : int         = 180,
         gradAccum        : int         = 4,
         lr               : float       = 1e-5,
         nWorker          : int         = 8,
