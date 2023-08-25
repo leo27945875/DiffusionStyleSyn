@@ -1,3 +1,6 @@
+from typing import Any
+
+
 def TestModelArch():
     import torch
     import torch.nn.functional as F
@@ -32,8 +35,7 @@ def TestSeperateDiffusion():
 def TestTrySomething():
     import torch
 
-    a = torch.tensor([3.5, 3])
-    print(a.dim())
+    torch.load("AAAA")
 
 
 if __name__ == '__main__':

@@ -1,9 +1,9 @@
 import torch
 from torchvision.utils import make_grid, save_image
 
-from tqdm   import trange
+from tqdm import trange
 
-from model    import PrecondUNet
+from model    import MyUNet
 from utils    import FloatToBatch
 from .rescale import DynamicThreshold, RescaleConditionResult
 from .design  import EDM
@@ -38,7 +38,15 @@ class EDMSampler:
         self.gamma        = min(sChurn / self.nStep, 2. ** 0.5 - 1.)
     
     @torch.inference_mode()
-    def Run(self, denoiser: PrecondUNet, batchSize: int, saveFilename: str = None, denoiseArgs: dict = {}) -> torch.Tensor:
+    def Run(
+            self, 
+            denoiser            : MyUNet, 
+            batchSize           : int, 
+            saveFilename        : str  = None, 
+            denoiseArgs         : dict = {}, 
+            isReturnDenormImage : bool = True
+        ) -> torch.Tensor:
+
         t1  = self.diffusion.IndexToSigma(0)
         img = self.SampleNoises(batchSize, std=t1)
         for i in trange(self.nStep):
@@ -60,18 +68,18 @@ class EDMSampler:
             
             img = x1
             
-        img = (img + 1.) * 0.5
+        imgDenorm = (img + 1.) * 0.5
         if saveFilename:
             save_image(
-                make_grid(img.clamp(0., 1.), nrow=round(batchSize ** 0.5)), 
+                make_grid(imgDenorm.clamp(0., 1.), nrow=round(batchSize ** 0.5)), 
                 saveFilename
             )
 
-        return img
+        return imgDenorm if isReturnDenormImage else img
 
-    def Denoise(self, denoiser: PrecondUNet, x: torch.Tensor, sigma: float, denoiseArgs: dict = {}) -> torch.Tensor:
+    def Denoise(self, denoiser: MyUNet, x: torch.Tensor, sigma: float, denoiseArgs: dict = {}) -> torch.Tensor:
         if self.isThreshold:
-            return DynamicThreshold(denoiser(x, FloatToBatch(x.size(0), sigma, self.device)))
+            return DynamicThreshold(denoiser(x, torch.tensor(sigma, device=self.device)))
         
         return denoiser(x, torch.tensor(sigma, device=self.device))
     
@@ -100,7 +108,7 @@ class EDMCondSampler(EDMSampler):
         self.wCond      = wCond
         self.rescalePhi = rescalePhi
 
-    def Denoise(self, denoiser: PrecondUNet, x: torch.Tensor, sigma: float, denoiseArgs: dict) -> torch.Tensor:
+    def Denoise(self, denoiser: MyUNet, x: torch.Tensor, sigma: float, denoiseArgs: dict) -> torch.Tensor:
 
         xCond   = torch.cat([x, denoiseArgs["cond"  ]["concat"]], dim=1)
         xUncond = torch.cat([x, denoiseArgs["uncond"]["concat"]], dim=1)

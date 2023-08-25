@@ -4,12 +4,35 @@ from torch.utils.data  import DataLoader
 from torchvision.utils import make_grid, save_image
 from lion_pytorch      import Lion
 
+import os
 import random
+from functools import partial
 
-from data  import MakeDatasets
-from edm   import EDM, EDMCondSampler
-from model import *
-from utils import *
+from data       import MakeDatasets
+from edm        import EDM, EDMCondSampler, Seperate
+from model      import *
+from utils      import *
+from type_alias import *
+
+
+def BuildModel(PreconditionFunc: T_Precond_Func, nClass: int, baseChannel: int, attnChannel: int, extractorOutChannel: int):
+    """
+    Build diffusion model arch in CPU.
+    """
+    return PrecondUNet(
+        GetPrecondSigmas                      = PreconditionFunc,
+        in_channels                           = 3 + nClass,
+        out_channels                          = 3,
+        block_out_channels                    = (baseChannel, baseChannel * 2, baseChannel * 3, baseChannel * 4),
+        down_block_types                      = ("DownBlock2D", "AttnDownBlock2D", "AttnDownBlock2D", "AttnDownBlock2D"),
+        up_block_types                        = ("AttnUpBlock2D", "AttnUpBlock2D", "AttnUpBlock2D", "UpBlock2D"),
+        attention_head_dim                    = attnChannel,
+        resnet_time_scale_shift               = "ada_group",          # "default", "scale_shift", "ada_group", "spatial"
+        class_embed_type                      = "simple_projection",
+        class_embeddings_concat               = True,
+        cross_attention_dim                   = (baseChannel, baseChannel * 2, baseChannel * 3, baseChannel * 4),
+        projection_class_embeddings_input_dim = extractorOutChannel
+    )
 
 
 def Train(
@@ -36,57 +59,70 @@ def Train(
         isCompile        : bool        = False,
         isFixExtractor   : bool        = True,
         isUseFixFeature  : bool        = True,    
-        dataFolder       : str         = "data"
+        dataFolder       : str         = "data",
+        saveFolder       : str         = "save",
+        visualFolder     : str         = "visual",
+
+        # Ensemble args:
+        nSeperate     : int       = 2,
+        seperateIdx   : int       = 0,
+        seperateArgs  : dict      = {"sampleMode": "uniform"},
+        ensembleFiles : list[str] = [None, "save/EDM_64/EDM_Epoch1000.pth"],
+        isSaveGPUMode : bool      = True
 ):
     # Random seed:
     SeedEverything(seed)
+
+    # File & Folder:
+    modelName    = f"eDiff-i[{seperateIdx}]"
+    saveFolder   = f"{saveFolder}/{modelName}"
+    visualFolder = f"{visualFolder}/{modelName}"
+    os.makedirs(saveFolder  , exist_ok=True)
+    os.makedirs(visualFolder, exist_ok=True)
 
     # Device:
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     # Diffusion:
-    diffusion = EDM(nStep)
+    wholeDiffusion = EDM(nStep)
+    if seperateArgs:
+        trainDiffusion = Seperate(wholeDiffusion, nSeperate, seperateIdx, seperateArgs)
 
     # Sampler:
-    sampler = EDMCondSampler(diffusion, (imageSize, imageSize), device=device)
+    sampler = EDMCondSampler(wholeDiffusion, (imageSize, imageSize), device=device)
 
-    # Model:
+    # Extractor:
     if isUseFixFeature:
         extractor = ExtractorPlaceholder(backbone=extractorName)
     else:
         extractor = VisualExtractor(backbone=extractorName)
 
-    denoiser = PrecondUNet(
-        GetPrecondSigmas                      = diffusion.Precondition,
-        in_channels                           = 3 + nClass,
-        out_channels                          = 3,
-        block_out_channels                    = (baseChannel, baseChannel * 2, baseChannel * 3, baseChannel * 4),
-        down_block_types                      = ("DownBlock2D", "AttnDownBlock2D", "AttnDownBlock2D", "AttnDownBlock2D"),
-        up_block_types                        = ("AttnUpBlock2D", "AttnUpBlock2D", "AttnUpBlock2D", "UpBlock2D"),
-        attention_head_dim                    = attnChannel,
-        resnet_time_scale_shift               = "ada_group",          # "default", "scale_shift", "ada_group", "spatial"
-        class_embed_type                      = "simple_projection",
-        class_embeddings_concat               = True,
-        cross_attention_dim                   = (baseChannel, baseChannel * 2, baseChannel * 3, baseChannel * 4),
-        projection_class_embeddings_input_dim = extractor.outChannel
+    # Ensemble:
+    assert ensembleFiles[seperateIdx] is None, f"[ensembleFiles[seperateIdx]] must be None."
+    assert all([(file is not None) for i, file in enumerate(ensembleFiles) if i != seperateIdx]), f"Files correspond to auxiliary model must not be None."
+    BuildModelFunc = partial(
+        BuildModel, PreconditionFunc=wholeDiffusion.Precondition, nClass=nClass, baseChannel=baseChannel, attnChannel=attnChannel, extractorOutChannel=extractor.outChannel
     )
-
-    optimizer = Lion(denoiser.parameters(), lr=lr)
+    
+    ensembler = Ensembler.InitFromFiles(ensembleFiles, BuildModelFunc, wholeDiffusion, isSaveGPUMode)
+    optimizer = Lion(ensembler.parameters(), lr=lr)
     scaler    = torch.cuda.amp.GradScaler(enabled=isAmp)
-    ema       = ModuleEMA(denoiser)
+    ema       = ModuleEMA(ensembler[seperateIdx])
 
     if isCompile:
         torch.compile(extractor)
-        torch.compile(denoiser)
+        torch.compile(ensembler)
         torch.compile(ema)
 
     if isFixExtractor:
         extractor.requires_grad_(False)
         extractor.eval()
     
-    denoiser.to(device)
+    if isValidEMA:
+        ensembler.SetTestingEMA(ema)
+
+    ensembler.to(device)
     extractor.to(device)
-    ema.cpu()
 
     # Data:
     trainset, validset = MakeDatasets(
@@ -100,7 +136,7 @@ def Train(
 
     # Load checkpoint:
     if ckptFile:
-        resumeEpoch = LoadCheckpoint(ckptFile, denoiser, extractor, ema, optimizer, None, scaler, None, isOnlyLoadWeight)
+        resumeEpoch = LoadCheckpoint(ckptFile, ensembler[seperateIdx], extractor, ema, optimizer, None, scaler, None, isOnlyLoadWeight)
     else:
         resumeEpoch = 0
     
@@ -109,10 +145,10 @@ def Train(
         Valid(
             sampler      = sampler,
             dataloader   = validloader,
-            denoiser     = ema if isValidEMA else denoiser,
+            denoiser     = ensembler,
             extractor    = extractor,
             device       = device, 
-            saveFilename = f"./visual/EDM_Valid_Check.png"
+            saveFilename = f"{visualFolder}/{modelName}_Valid_Check.png"
         )
 
     for epoch in range(resumeEpoch + 1, nEpoch + 1):
@@ -124,7 +160,7 @@ def Train(
             if random.random() < pUncond:
                 images, masks, toExtracts = images, None, None
             
-            loss = GetLoss(denoiser, extractor, diffusion, images, masks, toExtracts, gradAccum, isAmp, device)
+            loss = GetLoss(ensembler[seperateIdx], extractor, trainDiffusion, images, masks, toExtracts, gradAccum, isAmp, device)
             scaler.scale(loss).backward()
             if batch % gradAccum == 0:
                 scaler.step(optimizer)
@@ -142,33 +178,29 @@ def Train(
 
         # Checkpoint:
         if epoch % ckptFreq == 0:
-            SaveCheckpoint(epoch, f"./save/EDM.pth", denoiser, extractor, ema, optimizer, None, scaler)
+            SaveCheckpoint(epoch, f"{saveFolder}/{modelName}.pth", ensembler[seperateIdx], extractor, ema, optimizer, None, scaler)
 
         # Validation:
         if epoch % validFreq == 0:
             Valid(
                 sampler      = sampler,
                 dataloader   = validloader,
-                denoiser     = ema if isValidEMA else denoiser,
+                denoiser     = ensembler,
                 extractor    = extractor,
                 device       = device, 
-                saveFilename = f"./visual/EDM_Epoch{epoch}.png"
+                saveFilename = f"{visualFolder}/{modelName}_Epoch{epoch}.png"
             )
-            
+
 
 @torch.inference_mode()
 def Valid(
         sampler      : EDMCondSampler,
         dataloader   : DataLoader,
-        denoiser     : ModuleEMA | MyUNet,
+        denoiser     : Ensembler,
         extractor    : Extractor,
         device       : torch.device,
         saveFilename : str
 ):
-    isDenosierEMA = isinstance(denoiser, ModuleEMA)
-    if isDenosierEMA:
-        denoiser.to(device)
-
     isDenoiserTraining  = denoiser .training
     isExtractorTraining = extractor.training
     denoiser .eval()
@@ -188,7 +220,7 @@ def Valid(
                 "extract": extractor(toExtracts)
             },
             "uncond": {
-                "concat" : torch.zeros([B, (denoiser.model.inChannel if isDenosierEMA else denoiser.inChannel) - C, H, W], device=device),
+                "concat" : torch.zeros([B, denoiser.inChannel - C, H, W], device=device),
                 "extract": extractor.MakeUncondTensor(B, device=device)
             }
         }
@@ -204,8 +236,6 @@ def Valid(
         denoiser.train()
     if isExtractorTraining: 
         extractor.train()
-    if isDenosierEMA:
-        denoiser.cpu()
     
     torch.cuda.empty_cache()
 

@@ -19,7 +19,7 @@ class MyUNet(nn.Module):
             self, 
             sample          : torch.FloatTensor,
             sigma           : torch.Tensor,
-            extract_feature : torch.Tensor
+            extract_feature : torch.Tensor | None = None
         ) -> torch.Tensor:
 
         raise NotImplementedError
@@ -42,7 +42,7 @@ class PrecondUNet(UNet2DConditionModel, MyUNet):
             self, 
             sample          : torch.FloatTensor,
             sigma           : torch.Tensor,
-            extract_feature : torch.Tensor
+            extract_feature : torch.Tensor | None = None
         ) -> torch.Tensor:
 
         cSkip, cOut, cIn, cNoise = self.GetPrecondSigmas(sigma)

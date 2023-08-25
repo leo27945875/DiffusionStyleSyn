@@ -60,9 +60,11 @@ def SaveCheckpoint(epoch, filename, model, extractor, ema=None, optimizer=None, 
     torch.save(ckpt, filename)
 
 
-def LoadCheckpoint(filename, model, extractor=None, ema=None, optimizer=None, scheduler=None, scaler=None, targetNet=None, isOnlyLoadWeight=False) -> int:
+def LoadCheckpoint(filename, model=None, extractor=None, ema=None, optimizer=None, scheduler=None, scaler=None, targetNet=None, isOnlyLoadWeight=False) -> int:
     ckpt = torch.load(filename, map_location="cpu")
-    model.load_state_dict(ckpt["model"])
+
+    if model and ckpt["model"]:
+        model.load_state_dict(ckpt["model"])
 
     if extractor and ckpt["extractor"]:
         extractor.load_state_dict(ckpt["extractor"])
