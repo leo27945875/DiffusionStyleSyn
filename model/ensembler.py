@@ -10,7 +10,15 @@ from utils import LoadCheckpoint
 
 
 class Ensembler(MyUNet):
-    def __init__(self, models: list[MyUNet], diffusion: EDM, trainingIdx: int | None = None, isSaveMode: bool = False, isTestOnlineModel: bool = False, isShowMessage: bool = True):
+    def __init__(
+            self, 
+            models            : list[MyUNet], 
+            diffusion         : EDM, 
+            trainingIdx       : int | None = None, 
+            isSaveMode        : bool       = False, 
+            isTestOnlineModel : bool       = False, 
+            isShowMessage     : bool       = False
+        ):
         super().__init__()
         self.models            = nn.ModuleList(models)
         self.diffusion         = diffusion
@@ -38,7 +46,7 @@ class Ensembler(MyUNet):
         trainingIdx       : int | None = None, 
         isSaveMode        : bool       = False, 
         isTestOnlineModel : bool       = False, 
-        isShowMessage     : bool       = True
+        isShowMessage     : bool       = False
     ) -> "Ensembler":
         
         ensembleList, onlineModel = [], None
