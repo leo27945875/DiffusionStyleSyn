@@ -30,15 +30,23 @@ class Ensembler(MyUNet):
             self.cpu()
     
     @classmethod
-    def InitFromFiles(cls, ensembleFiles: list[str], BuildModelFunc: Callable[[], MyUNet], diffusion: EDM, isSaveMode: bool = False, isTestOnlineModel: bool = False, isShowMessage: bool = True) -> "Ensembler":
-        ensembleList, trainingIdx, onlineModel = [], None, None
+    def InitFromFiles(
+        cls, 
+        ensembleFiles     : list[str], 
+        BuildModelFunc    : Callable[[], MyUNet], 
+        diffusion         : EDM, 
+        trainingIdx       : int | None = None, 
+        isSaveMode        : bool       = False, 
+        isTestOnlineModel : bool       = False, 
+        isShowMessage     : bool       = True
+    ) -> "Ensembler":
+        
+        ensembleList, onlineModel = [], None
         for i, file in enumerate(ensembleFiles):
             denoiser = BuildModelFunc()
             if file is not None:
                 LoadCheckpoint(file, ema=denoiser, isOnlyLoadWeight=True)
-            else:
-                assert trainingIdx is None and onlineModel is None, "[Ensembler] Only allow one training model in the Ensembler for now."
-                trainingIdx = i
+            if i == trainingIdx:
                 onlineModel = denoiser
                 denoiser    = ModuleEMA(denoiser)
 

@@ -37,7 +37,7 @@ def BuildModel(PreconditionFunc: T_Precond_Func, nClass: int, baseChannel: int, 
 
 def Train(
         seed             : int         = 0,
-        nEpoch           : int         = 1000,
+        nEpoch           : int         = 500,
         batchSize        : int         = 160,
         gradAccum        : int         = 8,
         lr               : float       = 2e-5,
@@ -67,7 +67,7 @@ def Train(
         nSeperate     : int       = 2,
         seperateIdx   : int       = 0,
         seperateArgs  : dict      = {"sampleMode": "uniform"},
-        ensembleFiles : list[str] = [None, "save/EDM_64/EDM_Epoch1000.pth"],
+        ensembleFiles : list[str] = ["save/EDM_64/EDM_Epoch1000.pth", "save/EDM_64/EDM_Epoch1000.pth"],
         isSaveGPUMode : bool      = True
 ):
     # Random seed:
@@ -77,8 +77,11 @@ def Train(
     modelName    = f"eDiff-i[{seperateIdx}]"
     saveFolder   = f"{saveFolder}/{modelName}"
     visualFolder = f"{visualFolder}/{modelName}"
+    saveCkptName = f"{saveFolder}/{modelName}.pth"
+    
     os.makedirs(saveFolder  , exist_ok=True)
     os.makedirs(visualFolder, exist_ok=True)
+
 
     # Device:
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -104,7 +107,7 @@ def Train(
         BuildModel, PreconditionFunc=wholeDiffusion.Precondition, nClass=nClass, baseChannel=baseChannel, attnChannel=attnChannel, extractorOutChannel=extractor.outChannel
     )
     
-    ensembler = Ensembler.InitFromFiles(ensembleFiles, BuildModelFunc, wholeDiffusion, isSaveGPUMode, not isValidEMA)
+    ensembler = Ensembler.InitFromFiles(ensembleFiles, BuildModelFunc, wholeDiffusion, seperateIdx, isSaveGPUMode, not isValidEMA)
     model     = ensembler.onlineModel
     ema       = ensembler.offlineModel
 
@@ -177,7 +180,7 @@ def Train(
 
         # Checkpoint:
         if epoch % ckptFreq == 0:
-            SaveCheckpoint(epoch, f"{saveFolder}/{modelName}.pth", model, extractor, ema, optimizer, None, scaler)
+            SaveCheckpoint(epoch, saveCkptName, model, extractor, ema, optimizer, None, scaler)
 
         # Validation:
         if epoch % validFreq == 0:
@@ -189,6 +192,8 @@ def Train(
                 device       = device, 
                 saveFilename = f"{visualFolder}/{modelName}_Epoch{epoch}.png"
             )
+    
+    return saveCkptName
 
 
 def GetLoss(
