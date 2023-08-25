@@ -33,11 +33,9 @@ def TestSeperateDiffusion():
 
 
 def TestTrySomething():
-    import torch
+    import math
 
-    a = torch.nn.Linear(2,5)
-    b = a.to("cuda")
-    print(a.weight.device)
+    print(math.log2(1024))
 
 
 if __name__ == '__main__':

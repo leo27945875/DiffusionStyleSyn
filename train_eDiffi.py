@@ -236,18 +236,29 @@ def GetLoss(
 
 def Main():
 
-    N_SEPERATE       = 2
-    INIT_WEIGHT_CKPT = "save/EDM_64/EDM_Epoch1000.pth"
+    LEVEL             = 1
+    INIT_WEIGHT_CKPTS = ["save/EDM_64/EDM_Epoch1000.pth"]
 
-    ensembleFiles = [INIT_WEIGHT_CKPT for _ in range(N_SEPERATE)]
+    ################################## Training Pipeline ##################################
+
+    assert LEVEL >= 1, "[Main] [LEVEL] must >= 1 ."
+
+    nSeperate   = 2 ** (LEVEL)
+    nPretrained = 2 ** (LEVEL - 1)
+
+    assert len(INIT_WEIGHT_CKPTS) == nPretrained, f"[Main] Length of [INIT_WEIGHT_CKPTS] is not enough. (Must be equal to {nPretrained})"
+
+    ensembleFiles = [
+        INIT_WEIGHT_CKPTS[i // 2] for i in range(nSeperate)
+    ]
 
     print("\n" + "=" * 50 + " Start training eDiff-i " + "=" * 50)
     print(f"\nEnsemble init ckpt : [{ensembleFiles}]\n")
 
-    for i in range(N_SEPERATE):
+    for i in range(nSeperate):
         print(f"\nTraining ensemble [{i}] ... ")
         ensembleFiles[i] = Train(
-            nSeperate     = N_SEPERATE,
+            nSeperate     = nSeperate,
             seperateIdx   = i,
             ensembleFiles = ensembleFiles
         )
