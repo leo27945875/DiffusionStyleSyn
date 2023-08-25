@@ -40,7 +40,7 @@ def Train(
         nEpoch           : int         = 500,
         batchSize        : int         = 160,
         gradAccum        : int         = 8,
-        lr               : float       = 2e-5,
+        lr               : float       = 1e-5,
         nWorker          : int         = 8,
         validFreq        : int         = 5,
         ckptFreq         : int         = 1,
@@ -59,7 +59,7 @@ def Train(
         isCompile        : bool        = False,
         isFixExtractor   : bool        = True,
         isUseFixFeature  : bool        = True,    
-        dataFolder       : str         = "data",
+        dataFolder       : str         = "data_80",
         saveFolder       : str         = "save",
         visualFolder     : str         = "visual",
 
