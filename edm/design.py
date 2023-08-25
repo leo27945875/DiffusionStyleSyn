@@ -33,7 +33,7 @@ class EDM:
         if self.sampleMode == "log_normal":
             return torch.exp(pMean + pStd * torch.randn((batchSize,), device=device))
         elif self.sampleMode == "uniform":
-            return torch.rand((batchSize,)) * (self.sigmaMax - self.sigmaMin) + self.sigmaMin
+            return torch.rand((batchSize,), device=device) * (self.sigmaMax - self.sigmaMin) + self.sigmaMin
         else:
             raise AssertionError(f"[EDM] Invalid sampling mode [{self.sampleMode}].")
 
