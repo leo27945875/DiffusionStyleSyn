@@ -56,7 +56,7 @@ class Ensembler(MyUNet):
                 LoadCheckpoint(file, ema=denoiser, isOnlyLoadWeight=True)
             if i == trainingIdx:
                 onlineModel = denoiser
-                denoiser    = ModuleEMA(denoiser)
+                denoiser    = ModuleEMA(onlineModel)
 
             ensembleList.append(denoiser)
         

@@ -1,5 +1,7 @@
 from typing import Any
 
+from utils import *
+
 
 def TestModelArch():
     import torch
@@ -33,9 +35,11 @@ def TestSeperateDiffusion():
 
 
 def TestTrySomething():
-    import math
+    a = []
+    b = [1]
 
-    print(math.log2(1024))
+    for i in PaddedZip(a, b):
+        print(i)
 
 
 if __name__ == '__main__':

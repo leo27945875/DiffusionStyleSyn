@@ -7,6 +7,7 @@ import json
 import math
 import random
 import numpy as np
+from typing import Iterable, Any, Generator
 
 PI = math.pi
 
@@ -25,6 +26,29 @@ class Metric:
     
     def Mean(self) -> float:
         return self.val / self.num
+
+
+def PaddedZip(seq0: Iterable[Any], seq1: Iterable[Any]) -> Generator:
+    iter0, iter1 = iter(seq0), iter(seq1)
+    isFinish0, isFinish1 = False, False
+
+    while not isFinish0 or not isFinish1:
+        e0 = None
+        if not isFinish0:
+            try:
+                e0 = next(iter0)
+            except StopIteration:
+                isFinish0 = True
+        
+        e1 = None
+        if not isFinish1:
+            try:
+                e1 = next(iter1)
+            except StopIteration:
+                isFinish1 = True
+        
+        if e0 is not None or e1 is not None:
+            yield e0, e1
 
 
 def SeedEverything(seed, isFixCudnn=False) -> None:

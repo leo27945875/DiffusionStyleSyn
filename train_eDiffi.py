@@ -253,9 +253,9 @@ def Main():
     ]
 
     print("\n" + "=" * 50 + " Start training eDiff-i " + "=" * 50)
-    print(f"\nEnsemble init ckpt : [{ensembleFiles}]\n")
 
     for i in range(nSeperate):
+        print(f"\n\nEnsemble init ckpt : [{ensembleFiles}]\n")
         print(f"\nTraining ensemble [{i}] ... ")
         ensembleFiles[i] = Train(
             nSeperate     = nSeperate,
