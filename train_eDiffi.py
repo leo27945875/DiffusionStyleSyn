@@ -122,6 +122,7 @@ def Train(
 
     ensembler.to(device)
     extractor.to(device)
+    model    .to(device)
 
     # Data:
     trainset, validset = MakeDatasets(
