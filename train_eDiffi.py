@@ -40,7 +40,7 @@ def Train(
         nEpoch           : int         = 300,
         batchSize        : int         = 180,
         gradAccum        : int         = 4,
-        lr               : float       = 1e-5,
+        lr               : float       = 2e-5,
         nWorker          : int         = 8,
         validFreq        : int         = 5,
         ckptFreq         : int         = 1,
