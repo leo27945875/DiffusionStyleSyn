@@ -29,10 +29,10 @@ class Ensembler(MyUNet):
 
         self.__inChannel, self.__outChannel = self.__CheckConsistancy(models)
 
-        self.__trainingIdx : int | None          = trainingIdx
-        self.__onlineModel : list[MyUNet] | None = []          # Using list to avoid being registered to nn.Module.
+        self.__lastModelIdx : int | None          = None
+        self.__trainingIdx  : int | None          = trainingIdx
+        self.__onlineModel  : list[MyUNet] | None = []          # Using list to avoid being registered to nn.Module.
 
-        self.__lastModelIdx : int | None = None
         
         if isSaveMode:
             self.cpu()
