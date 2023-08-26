@@ -242,7 +242,7 @@ def Main():
     LEVEL             = 1
     N_TRAINING_EPOCHS = [0, 300]
     INIT_WEIGHT_CKPTS = ["save/EDM_64/EDM_Epoch1000.pth"]
-    CHECK_POINT_FILES = ["save/eDiff-i_64[0]/eDiff-i_64[0].pth", "save/eDiff-i_64[1]/eDiff-i_64[1].pth"]
+    CHECK_POINT_FILES = ["save/eDiff-i_L1_64[0]/eDiff-i_L1_64[0].pth"]
 
     ################################## Training Pipeline ##################################
 
@@ -263,7 +263,7 @@ def Main():
 
     for i in range(nSeperate):
         print(f"\n\nEnsemble init ckpt : [{ensembleFiles}]\n")
-        print(f"\nTraining ensemble [{i}] ... ")
+        print(f"Training ensemble [{i}] ... ")
 
         ckptFile = CHECK_POINT_FILES[i] if i < len(CHECK_POINT_FILES) else None
         if ckptFile is not None:
@@ -277,7 +277,7 @@ def Main():
                 nSeperate     = nSeperate,
                 seperateIdx   = i,
                 ensembleFiles = ensembleFiles,
-                modelName     = f"eDiff-i_L[{LEVEL}]"
+                modelName     = f"eDiff-i_L{LEVEL}"
             )
         else:
             print("No training epoch, so skip training process.")
