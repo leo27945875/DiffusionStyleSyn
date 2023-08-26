@@ -1,19 +1,21 @@
 import torch
 import torch.nn as nn
 
-from typing import Callable
+from typing import Callable, TYPE_CHECKING
 
 from .unet import MyUNet
 from .ema  import ModuleEMA
-from edm   import EDM
 from utils import LoadCheckpoint
+
+if TYPE_CHECKING:
+    from edm import EDM
 
 
 class Ensembler(MyUNet):
     def __init__(
             self, 
             models            : list[MyUNet], 
-            diffusion         : EDM, 
+            diffusion         : "EDM", 
             trainingIdx       : int | None = None, 
             isSaveMode        : bool       = False, 
             isTestOnlineModel : bool       = False, 
@@ -42,7 +44,7 @@ class Ensembler(MyUNet):
         cls, 
         ensembleFiles     : list[str], 
         BuildModelFunc    : Callable[[], MyUNet], 
-        diffusion         : EDM, 
+        diffusion         : "EDM", 
         trainingIdx       : int | None = None, 
         isSaveMode        : bool       = False, 
         isTestOnlineModel : bool       = False, 

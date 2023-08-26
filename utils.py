@@ -105,6 +105,15 @@ def LoadCheckpoint(filename, model=None, extractor=None, ema=None, optimizer=Non
     return ckpt["epoch"]
 
 
+def FilterStateDict(stateDict: dict[str, Any], includePrefix: str | None = None, excludePrefix: str | None = None, isTrim: bool = False) -> dict:
+    return {
+        (name[name.index('.') + 1:] if isTrim else name) : param
+        for name, param in stateDict.items()
+        if (includePrefix is None or (prefix                      ) == includePrefix) and 
+           (excludePrefix is None or (prefix := name.split('.')[0]) != excludePrefix)
+    }
+
+
 def ReadRGBImage(filename: str) -> np.ndarray:
     return cv2.cvtColor(cv2.imread(filename, cv2.IMREAD_COLOR), cv2.COLOR_BGR2RGB)
 

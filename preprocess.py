@@ -6,18 +6,19 @@ import glob
 from tqdm import tqdm
 
 from utils import *
-from model import VisualExtractor
+from model import Extractor, CLIPImageEncoder, VQGAN
 
 
 def ExtractAndSaveVisualFeatures(
-        imageFolder  : str = "data/image",
-        saveFolder   : str = "data/feature",
-        saveFilename : str = "ADE20K-outdoor_Features.pth"
+        extractor    : str,
+        imageFolder  : str = "data_80/image",
+        saveFolder   : str = "data_80/feature",
+        saveFilename : str = "ADE20K-outdoor_VQGAN.pth"
 ):
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-    extractor = VisualExtractor().to(device)
+    extractor: Extractor = eval(extractor)().to(device)
     extractor.requires_grad_(False)
     extractor.eval()
 
@@ -31,7 +32,7 @@ def ExtractAndSaveVisualFeatures(
             image: torch.Tensor
             image = preprocess(image=ReadRGBImage(imageFile))["image"]
             image = image.unsqueeze(0).to(device)
-            features = DefaultConcatTensor(features, extractor(image.half()).cpu())
+            features = DefaultConcatTensor(features, extractor(image).cpu())
             filenames.append(GetBasename(imageFile, isTrimExt=True))
     
     print(f"Saving features (shape = {features.size()}) ... ", end="")
@@ -80,4 +81,4 @@ def ResizeDataset(srcFolder: str = "data", targetSize: int = 80):
 if __name__ == "__main__":
 
     # ResizeDataset()
-    ExtractAndSaveVisualFeatures()
+    ExtractAndSaveVisualFeatures(extractor="VQGAN")

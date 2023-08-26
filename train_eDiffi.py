@@ -12,27 +12,7 @@ from edm        import EDM, EDMCondSampler, Seperate
 from model      import *
 from utils      import *
 from type_alias import *
-from validation import Valid
-
-
-def BuildModel(PreconditionFunc: T_Precond_Func, nClass: int, baseChannel: int, attnChannel: int, extractorOutChannel: int):
-    """
-    Build diffusion model arch in CPU.
-    """
-    return PrecondUNet(
-        GetPrecondSigmas                      = PreconditionFunc,
-        in_channels                           = 3 + nClass,
-        out_channels                          = 3,
-        block_out_channels                    = (baseChannel, baseChannel * 2, baseChannel * 3, baseChannel * 4),
-        down_block_types                      = ("DownBlock2D", "AttnDownBlock2D", "AttnDownBlock2D", "AttnDownBlock2D"),
-        up_block_types                        = ("AttnUpBlock2D", "AttnUpBlock2D", "AttnUpBlock2D", "UpBlock2D"),
-        attention_head_dim                    = attnChannel,
-        resnet_time_scale_shift               = "ada_group",          # "default", "scale_shift", "ada_group", "spatial"
-        class_embed_type                      = "simple_projection",
-        class_embeddings_concat               = True,
-        cross_attention_dim                   = (baseChannel, baseChannel * 2, baseChannel * 3, baseChannel * 4),
-        projection_class_embeddings_input_dim = extractorOutChannel
-    )
+from validation import Valid, ModelBackToCPU
 
 
 def Train(
@@ -45,12 +25,11 @@ def Train(
         validFreq        : int         = 5,
         ckptFreq         : int         = 1,
         isAmp            : bool        = True,
-        pUncond          : float       = 0.1, 
+        pUncond          : float       = 0.1,
         nStep            : int         = 100,
         imageSize        : tuple       = 64,
         baseChannel      : int         = 192,
         attnChannel      : int         = 16,
-        extractorName    : str         = "ViT-B/32",
         nClass           : int         = 150,
         ckptFile         : str | None  = None,
         isOnlyLoadWeight : bool        = False,
@@ -58,18 +37,19 @@ def Train(
         isValidEMA       : bool        = True,
         isCompile        : bool        = False,
         isFixExtractor   : bool        = True,
-        isUseFixFeature  : bool        = True,    
         dataFolder       : str         = "data_80",
         saveFolder       : str         = "save",
         visualFolder     : str         = "visual",
+        fixedFeatureFile : str | None  = "ADE20K-outdoor_CLIP.pth",
+        featureAxisNum   : int         = 3,
         modelName        : str         = "eDiff-i",
 
         # Ensemble args:
         nSeperate     : int       = 2,
         seperateIdx   : int       = 0,
         seperateArgs  : dict      = {"sampleMode": "uniform"},
-        ensembleFiles : list[str] = ["save/EDM_64/EDM_Epoch1000.pth", "save/EDM_64/EDM_Epoch1000.pth"],
-        isSaveGPUMode : bool      = True
+        ensembleFiles : list[str] = ["save/eDiff-i.pth", "save/eDiff-i.pth"],
+        isSaveGPUMode : bool      = False
 ):
     # Random seed:
     SeedEverything(seed)
@@ -83,6 +63,8 @@ def Train(
     os.makedirs(saveFolder  , exist_ok=True)
     os.makedirs(visualFolder, exist_ok=True)
 
+    # Validation:
+    ValidFunc = Valid if isSaveGPUMode else ModelBackToCPU(Valid)
 
     # Device:
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -96,10 +78,15 @@ def Train(
     sampler = EDMCondSampler(wholeDiffusion, (imageSize, imageSize), device=device)
 
     # Extractor:
-    if isUseFixFeature:
-        extractor = ExtractorPlaceholder(backbone=extractorName)
+    assert featureAxisNum in {2, 3}, f"[Train] The parameter [featureAxisNum] must be 2 or 3. But got {featureAxisNum} instead."
+    if fixedFeatureFile:
+        match featureAxisNum:
+            case 2: extractor = ExtractorPlaceholder("clip")
+            case 3: extractor = ExtractorPlaceholder("vqgan")
     else:
-        extractor = VisualExtractor(backbone=extractorName)
+        match featureAxisNum:
+            case 2: extractor = CLIPImageEncoder()
+            case 3: extractor = VQGAN()
 
     # Ensemble:
     BuildModelFunc = partial(
@@ -121,7 +108,7 @@ def Train(
         extractor.requires_grad_(False)
         extractor.eval()
 
-    ensembler.to(device)
+    ensembler.cpu()
     extractor.to(device)
     model    .to(device)
 
@@ -130,7 +117,7 @@ def Train(
         dataFolder         = dataFolder,
         imageSize          = imageSize,
         extractorTransform = extractor.GetPreprocess(isFromNormalized=True), 
-        isUseFixFeature    = isUseFixFeature
+        fixedFeatureFile   = fixedFeatureFile
     )
     trainloader = DataLoader(trainset, batchSize // gradAccum, True, pin_memory=True, num_workers=nWorker)
     validloader = DataLoader(validset, len(validset), False, pin_memory=True)
@@ -143,7 +130,7 @@ def Train(
     
     # Training:
     if isValidFirst:
-        Valid(
+        ValidFunc(
             sampler      = sampler,
             dataloader   = validloader,
             denoiser     = ensembler,
@@ -183,7 +170,7 @@ def Train(
 
         # Validation:
         if epoch % validFreq == 0:
-            Valid(
+            ValidFunc(
                 sampler      = sampler,
                 dataloader   = validloader,
                 denoiser     = ensembler,
@@ -240,9 +227,9 @@ def GetLoss(
 def Main():
 
     LEVEL             = 1
-    N_TRAINING_EPOCHS = [0, 300]
+    N_TRAINING_EPOCHS = [300, 300]
     INIT_WEIGHT_CKPTS = ["save/EDM_64/EDM_Epoch1000.pth"]
-    CHECK_POINT_FILES = ["save/eDiff-i_L1_64[0]/eDiff-i_L1_64[0].pth"]
+    CHECK_POINT_FILES = []
 
     ################################## Training Pipeline ##################################
 
@@ -265,15 +252,17 @@ def Main():
         print(f"\n\nEnsemble init ckpt : [{ensembleFiles}]\n")
         print(f"Training ensemble [{i}] ... ")
 
+        nEpoch   = N_TRAINING_EPOCHS[i]
         ckptFile = CHECK_POINT_FILES[i] if i < len(CHECK_POINT_FILES) else None
         if ckptFile is not None:
             print(f"Got checkoint file : [{ckptFile}].")
-            ensembleFiles[i] = ckptFile
+            if nEpoch != 0:
+                ensembleFiles[i] = ckptFile
         
-        nEpoch = N_TRAINING_EPOCHS[i]
         if nEpoch:
             ensembleFiles[i] = Train(
                 nEpoch        = nEpoch,
+                ckptFile      = ckptFile,
                 nSeperate     = nSeperate,
                 seperateIdx   = i,
                 ensembleFiles = ensembleFiles,

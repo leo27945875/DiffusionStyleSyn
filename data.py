@@ -127,14 +127,15 @@ def MakeDatasets(
         trainTransform     : A.Compose | None = None,
         validTransform     : A.Compose | None = None,
         extractorTransform : A.Compose | None = None,
-        isUseFixFeature    : bool             = True,
+        fixedFeatureFile   : str | None       = None,
         imageSize          : int              = 192
 ):  
-    imageFolder = f"{dataFolder}/image"
-    labelFolder = f"{dataFolder}/mask"
+    imageFolder   = f"{dataFolder}/image"
+    labelFolder   = f"{dataFolder}/mask"
+    featureFolder = f"{dataFolder}/feature"
 
-    if isUseFixFeature:
-        fixedFeatureFile = f"{dataFolder}/feature/ADE20K-outdoor_Features.pth"
+    if fixedFeatureFile:
+        fixedFeatureFile = f"{featureFolder}/{fixedFeatureFile}"
         fixedFeatureDict = torch.load(fixedFeatureFile, map_location="cpu")
         fixedFeatureNames, fixedFeatureTensors = fixedFeatureDict["filenames"], fixedFeatureDict["features"].float()
         

@@ -1,11 +1,31 @@
 import torch
+import torch.nn as nn
 from torch.utils.data  import DataLoader
 from torchvision.utils import make_grid, save_image
+
+from typing import Callable
 
 from edm        import EDMSampler
 from model      import *
 from utils      import *
 from type_alias import *
+
+
+def ModelBackToCPU(validFunc: Callable):
+    def ModelBackToCPU_Valid(
+            sampler      : EDMSampler,
+            dataloader   : DataLoader,
+            denoiser     : MyUNet,
+            extractor    : Extractor,
+            device       : torch.device,
+            saveFilename : str
+    ):
+        denoiser.to(device)
+        output = validFunc(sampler, dataloader, denoiser, extractor, device, saveFilename)
+        denoiser.cpu()
+        return output
+    
+    return ModelBackToCPU_Valid
 
 
 @torch.inference_mode()

@@ -4,7 +4,6 @@ from torchvision.utils import make_grid, save_image
 from tqdm import trange
 
 from model    import MyUNet
-from utils    import FloatToBatch
 from .rescale import DynamicThreshold, RescaleConditionResult
 from .design  import EDM
 

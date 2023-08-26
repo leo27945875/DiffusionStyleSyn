@@ -10,27 +10,7 @@ from edm        import EDM, EDMCondSampler
 from model      import *
 from utils      import *
 from type_alias import *
-from validation import Valid
-
-
-def BuildModel(PreconditionFunc: T_Precond_Func, nClass: int, baseChannel: int, attnChannel: int, extractorOutChannel: int):
-    """
-    Build diffusion model arch in CPU.
-    """
-    return PrecondUNet(
-        GetPrecondSigmas                      = PreconditionFunc,
-        in_channels                           = 3 + nClass,
-        out_channels                          = 3,
-        block_out_channels                    = (baseChannel, baseChannel * 2, baseChannel * 3, baseChannel * 4),
-        down_block_types                      = ("DownBlock2D", "AttnDownBlock2D", "AttnDownBlock2D", "AttnDownBlock2D"),
-        up_block_types                        = ("AttnUpBlock2D", "AttnUpBlock2D", "AttnUpBlock2D", "UpBlock2D"),
-        attention_head_dim                    = attnChannel,
-        resnet_time_scale_shift               = "ada_group",          # "default", "scale_shift", "ada_group", "spatial"
-        class_embed_type                      = "simple_projection",
-        class_embeddings_concat               = True,
-        cross_attention_dim                   = (baseChannel, baseChannel * 2, baseChannel * 3, baseChannel * 4),
-        projection_class_embeddings_input_dim = extractorOutChannel
-    )
+from validation import Valid, ModelBackToCPU
 
 
 def Train(
@@ -43,12 +23,11 @@ def Train(
         validFreq        : int         = 5,
         ckptFreq         : int         = 1,
         isAmp            : bool        = True,
-        pUncond          : float       = 0.1, 
+        pUncond          : float       = 0.1,
         nStep            : int         = 100,
         imageSize        : tuple       = 128,
         baseChannel      : int         = 256,
         attnChannel      : int         = 8,
-        extractorName    : str         = "ViT-B/32",
         nClass           : int         = 150,
         ckptFile         : str | None  = None,
         isOnlyLoadWeight : bool        = False,
@@ -56,11 +35,27 @@ def Train(
         isValidEMA       : bool        = True,
         isCompile        : bool        = False,
         isFixExtractor   : bool        = True,
-        isUseFixFeature  : bool        = True,    
-        dataFolder       : str         = "data"
+        dataFolder       : str         = "data",
+        saveFolder       : str         = "save",
+        visualFolder     : str         = "visual",
+        fixedFeatureFile : str | None  = "ADE20K-outdoor_VQGAN.pth",
+        featureAxisNum   : int         = 3,
+        modelName        : str         = "EDM"
 ):
     # Random seed:
     SeedEverything(seed)
+
+    # File & Folder:
+    modelName    = f"{modelName}_{imageSize}"
+    saveFolder   = f"{saveFolder}/{modelName}"
+    visualFolder = f"{visualFolder}/{modelName}"
+    saveCkptName = f"{saveFolder}/{modelName}.pth"
+    
+    os.makedirs(saveFolder  , exist_ok=True)
+    os.makedirs(visualFolder, exist_ok=True)
+
+    # Validation:
+    ValidFunc = Valid if isValidEMA else ModelBackToCPU(Valid)
 
     # Device:
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -72,12 +67,17 @@ def Train(
     sampler = EDMCondSampler(diffusion, (imageSize, imageSize), device=device)
 
     # Model:
-    if isUseFixFeature:
-        extractor = ExtractorPlaceholder(backbone=extractorName)
+    assert featureAxisNum in {2, 3}, f"[Train] The parameter [featureAxisNum] must be 2 or 3. But got {featureAxisNum} instead."
+    if fixedFeatureFile:
+        match featureAxisNum:
+            case 2: extractor = ExtractorPlaceholder("clip")
+            case 3: extractor = ExtractorPlaceholder("vqgan")
     else:
-        extractor = VisualExtractor(backbone=extractorName)
-
-    denoiser  = BuildModel(diffusion.Precondition, nClass, baseChannel, attnChannel, extractor.outChannel)
+        match featureAxisNum:
+            case 2: extractor = CLIPImageEncoder()
+            case 3: extractor = VQGAN()
+            
+    denoiser  = BuildModel(diffusion.Precondition, nClass, baseChannel, attnChannel, extractor.outChannel, extractor.crossAttnChannel)
     optimizer = Lion(denoiser.parameters(), lr=lr)
     scaler    = torch.cuda.amp.GradScaler(enabled=isAmp)
     ema       = ModuleEMA(denoiser)
@@ -100,7 +100,7 @@ def Train(
         dataFolder         = dataFolder,
         imageSize          = imageSize,
         extractorTransform = extractor.GetPreprocess(isFromNormalized=True), 
-        isUseFixFeature    = isUseFixFeature
+        fixedFeatureFile   = fixedFeatureFile
     )
     trainloader = DataLoader(trainset, batchSize // gradAccum, True, pin_memory=True, num_workers=nWorker)
     validloader = DataLoader(validset, len(validset), False, pin_memory=True)
@@ -113,16 +113,14 @@ def Train(
     
     # Training:
     if isValidFirst:
-        Valid(
+        ValidFunc(
             sampler      = sampler,
             dataloader   = validloader,
-            denoiser     = ema.to(device) if isValidEMA else denoiser,
+            denoiser     = ema if isValidEMA else denoiser,
             extractor    = extractor,
             device       = device, 
-            saveFilename = f"./visual/EDM_Valid_Check.png"
+            saveFilename = f"./visual/{modelName}_Valid_Check.png"
         )
-        if isValidEMA:
-            ema.cpu()
 
     for epoch in range(resumeEpoch + 1, nEpoch + 1):
 
@@ -151,20 +149,18 @@ def Train(
 
         # Checkpoint:
         if epoch % ckptFreq == 0:
-            SaveCheckpoint(epoch, f"./save/EDM.pth", denoiser, extractor, ema, optimizer, None, scaler)
+            SaveCheckpoint(epoch, saveCkptName, denoiser, extractor, ema, optimizer, None, scaler)
 
         # Validation:
         if epoch % validFreq == 0:
-            Valid(
+            ValidFunc(
                 sampler      = sampler,
                 dataloader   = validloader,
-                denoiser     = ema.to(device) if isValidEMA else denoiser,
+                denoiser     = ema if isValidEMA else denoiser,
                 extractor    = extractor,
                 device       = device, 
-                saveFilename = f"./visual/EDM_Epoch{epoch}.png"
+                saveFilename = f"./visual/{modelName}_Epoch{epoch}.png"
             )
-            if isValidEMA:
-                ema.cpu()
 
 
 def GetLoss(
