@@ -62,6 +62,7 @@ def Train(
         dataFolder       : str         = "data_80",
         saveFolder       : str         = "save",
         visualFolder     : str         = "visual",
+        modelName        : str         = "eDiff-i",
 
         # Ensemble args:
         nSeperate     : int       = 2,
@@ -74,7 +75,7 @@ def Train(
     SeedEverything(seed)
 
     # File & Folder:
-    modelName    = f"eDiff-i_{imageSize}[{seperateIdx}]"
+    modelName    = f"{modelName}_{imageSize}[{seperateIdx}]"
     saveFolder   = f"{saveFolder}/{modelName}"
     visualFolder = f"{visualFolder}/{modelName}"
     saveCkptName = f"{saveFolder}/{modelName}.pth"
@@ -191,6 +192,8 @@ def Train(
                 saveFilename = f"{visualFolder}/{modelName}_Epoch{epoch}.png"
             )
     
+    del ensembler, model, ema, extractor, optimizer
+    torch.cuda.empty_cache()
     return saveCkptName
 
 
@@ -237,17 +240,19 @@ def GetLoss(
 def Main():
 
     LEVEL             = 1
+    N_TRAINING_EPOCHS = [0, 300]
     INIT_WEIGHT_CKPTS = ["save/EDM_64/EDM_Epoch1000.pth"]
-    CHECK_POINT_FILES = ["save/eDiff-i_64[0]/eDiff-i_64[0].pth"]
+    CHECK_POINT_FILES = ["save/eDiff-i_64[0]/eDiff-i_64[0].pth", "save/eDiff-i_64[1]/eDiff-i_64[1].pth"]
 
     ################################## Training Pipeline ##################################
 
-    assert LEVEL >= 1, "[Main] [LEVEL] must >= 1 ."
+    assert LEVEL >= 1, "[Main] [LEVEL] must >= 1."
 
     nSeperate   = 2 ** (LEVEL)
     nPretrained = 2 ** (LEVEL - 1)
 
     assert len(INIT_WEIGHT_CKPTS) == nPretrained, f"[Main] Length of [INIT_WEIGHT_CKPTS] is not enough. (Must be equal to {nPretrained})"
+    assert len(N_TRAINING_EPOCHS) == nSeperate  , f"[Main] Length of [N_TRAINING_EPOCHS] must be equal to 2 ** [LEVEL]"
     assert len(CHECK_POINT_FILES) <= nSeperate  , f"[Main] Length of [CHECK_POINT_FILES] must be less than 2 ** [LEVEL]."
 
     ensembleFiles = [
@@ -262,14 +267,20 @@ def Main():
 
         ckptFile = CHECK_POINT_FILES[i] if i < len(CHECK_POINT_FILES) else None
         if ckptFile is not None:
-            print(f"Got checkoint file : [{ckptFile}]. Skip training process.")
+            print(f"Got checkoint file : [{ckptFile}].")
             ensembleFiles[i] = ckptFile
-        else:
+        
+        nEpoch = N_TRAINING_EPOCHS[i]
+        if nEpoch:
             ensembleFiles[i] = Train(
+                nEpoch        = nEpoch,
                 nSeperate     = nSeperate,
                 seperateIdx   = i,
-                ensembleFiles = ensembleFiles
+                ensembleFiles = ensembleFiles,
+                modelName     = f"eDiff-i_L[{LEVEL}]"
             )
+        else:
+            print("No training epoch, so skip training process.")
     
     print("\n\nFinish training. Ckpt files :")
     for i, file in enumerate(ensembleFiles):
