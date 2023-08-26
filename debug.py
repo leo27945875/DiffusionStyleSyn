@@ -35,11 +35,13 @@ def TestSeperateDiffusion():
 
 
 def TestTrySomething():
-    a = []
-    b = [1]
+    from train import BuildModel
+    from torchinfo import summary
 
-    for i in PaddedZip(a, b):
-        print(i)
+    print(summary(BuildModel(
+        None, 150, 192, 16, 1024
+    )))
+
 
 
 if __name__ == '__main__':

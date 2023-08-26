@@ -238,6 +238,7 @@ def Main():
 
     LEVEL             = 1
     INIT_WEIGHT_CKPTS = ["save/EDM_64/EDM_Epoch1000.pth"]
+    CHECK_POINT_FILES = ["save/eDiff-i_64[0]/eDiff-i_64[0].pth"]
 
     ################################## Training Pipeline ##################################
 
@@ -247,6 +248,7 @@ def Main():
     nPretrained = 2 ** (LEVEL - 1)
 
     assert len(INIT_WEIGHT_CKPTS) == nPretrained, f"[Main] Length of [INIT_WEIGHT_CKPTS] is not enough. (Must be equal to {nPretrained})"
+    assert len(CHECK_POINT_FILES) <= nSeperate  , f"[Main] Length of [CHECK_POINT_FILES] must be less than 2 ** [LEVEL]."
 
     ensembleFiles = [
         INIT_WEIGHT_CKPTS[i // 2] for i in range(nSeperate)
@@ -257,11 +259,17 @@ def Main():
     for i in range(nSeperate):
         print(f"\n\nEnsemble init ckpt : [{ensembleFiles}]\n")
         print(f"\nTraining ensemble [{i}] ... ")
-        ensembleFiles[i] = Train(
-            nSeperate     = nSeperate,
-            seperateIdx   = i,
-            ensembleFiles = ensembleFiles
-        )
+
+        ckptFile = CHECK_POINT_FILES[i] if i < len(CHECK_POINT_FILES) else None
+        if ckptFile is not None:
+            print(f"Got checkoint file : [{ckptFile}]. Skip training process.")
+            ensembleFiles[i] = ckptFile
+        else:
+            ensembleFiles[i] = Train(
+                nSeperate     = nSeperate,
+                seperateIdx   = i,
+                ensembleFiles = ensembleFiles
+            )
     
     print("\n\nFinish training. Ckpt files :")
     for i, file in enumerate(ensembleFiles):
