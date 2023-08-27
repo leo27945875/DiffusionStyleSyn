@@ -20,7 +20,7 @@ def Train(
         nEpoch           : int         = 300,
         batchSize        : int         = 180,
         gradAccum        : int         = 4,
-        lr               : float       = 2e-5,
+        lr               : float       = 5e-5,
         nWorker          : int         = 8,
         validFreq        : int         = 5,
         ckptFreq         : int         = 1,
@@ -41,7 +41,7 @@ def Train(
         saveFolder       : str         = "save",
         visualFolder     : str         = "visual",
         fixedFeatureFile : str | None  = "ADE20K-outdoor_CLIP.pth",
-        featureAxisNum   : int         = 3,
+        featureAxisNum   : int         = 2,
         modelName        : str         = "eDiff-i",
 
         # Ensemble args:
@@ -226,9 +226,9 @@ def GetLoss(
 
 def Main():
 
-    LEVEL             = 1
-    N_TRAINING_EPOCHS = [300, 300]
-    INIT_WEIGHT_CKPTS = ["save/EDM_64/EDM_Epoch1000.pth"]
+    LEVEL             = 2
+    INIT_WEIGHT_CKPTS = ["save/eDiff-i_L1_64[0]/eDiff-i_L1_64[0].pth", "save/eDiff-i_L1_64[1]/eDiff-i_L1_64[1].pth"]
+    N_TRAINING_EPOCHS = [100, 100, 100, 100]
     CHECK_POINT_FILES = []
 
     ################################## Training Pipeline ##################################
