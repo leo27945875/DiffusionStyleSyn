@@ -38,8 +38,8 @@ def Train(
         dataFolder       : str         = "data",
         saveFolder       : str         = "save",
         visualFolder     : str         = "visual",
-        fixedFeatureFile : str | None  = "ADE20K-outdoor_VQGAN.pth",
-        featureAxisNum   : int         = 3,
+        fixedFeatureFile : str | None  = "ADE20K-outdoor_CLIP.pth",
+        featureAxisNum   : int         = 2,
         modelName        : str         = "EDM"
 ):
     # Random seed:
