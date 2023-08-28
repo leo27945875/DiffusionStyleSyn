@@ -29,9 +29,9 @@ def Train(
         baseChannel      : int         = 256,
         attnChannel      : int         = 8,
         nClass           : int         = 150,
-        ckptFile         : str | None  = None,
+        ckptFile         : str | None  = "save/EDM_128/EDM_128.pth",
         isOnlyLoadWeight : bool        = False,
-        isValidFirst     : bool        = False,
+        isValidFirst     : bool        = True,
         isValidEMA       : bool        = True,
         isCompile        : bool        = False,
         isFixExtractor   : bool        = True,
@@ -55,7 +55,7 @@ def Train(
     os.makedirs(visualFolder, exist_ok=True)
 
     # Validation:
-    ValidFunc = Valid if isValidEMA else ModelBackToCPU(Valid)
+    ValidFunc = ModelBackToCPU(Valid) if isValidEMA else Valid
 
     # Device:
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
