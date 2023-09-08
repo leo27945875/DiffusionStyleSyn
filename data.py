@@ -28,7 +28,7 @@ class Transforms:
         ], is_check_shapes=False)
 
 
-class ImageLabelTrainDataset(Dataset):
+class ADE20KOutdoorTrainDataset(Dataset):
     def __init__(
             self,
             imageFiles         : list[str],
@@ -73,7 +73,7 @@ class ImageLabelTrainDataset(Dataset):
         return len(self.imageFiles)
 
 
-class ImageLabelTestDataset(Dataset):
+class ADE20KOutdoorTestDataset(Dataset):
     def __init__(
             self,
             imageFiles         : list[str],
@@ -120,58 +120,76 @@ class ImageLabelTestDataset(Dataset):
     def __len__(self):
         return len(self.pairs)
 
-
-def MakeDatasets(
+########################################################## Dataset Makers ##########################################################
+class DatasetMaker:
+    @staticmethod
+    def Make(
         dataFolder         : str              = "data",
-        validNames         : list[str]        = ["ADE_train_00000004", "ADE_train_00000191", "ADE_train_00000554", "ADE_train_00000555"],
+        validNames         : list[str]        = [],
+        imageSize          : int              = 192,
         trainTransform     : A.Compose | None = None,
         validTransform     : A.Compose | None = None,
         extractorTransform : A.Compose | None = None,
-        fixedFeatureFile   : str | None       = None,
-        imageSize          : int              = 192
-):  
-    imageFolder   = f"{dataFolder}/image"
-    labelFolder   = f"{dataFolder}/mask"
-    featureFolder = f"{dataFolder}/feature"
-
-    if fixedFeatureFile:
-        fixedFeatureFile = f"{featureFolder}/{fixedFeatureFile}"
-        fixedFeatureDict = torch.load(fixedFeatureFile, map_location="cpu")
-        fixedFeatureNames, fixedFeatureTensors = fixedFeatureDict["filenames"], fixedFeatureDict["features"].float()
+        fixedFeatureFile   : str | None       = None
+    ) -> tuple[Dataset, ...]:
         
-        fixedFeatureValidMask = torch.tensor([(name in validNames) for name in fixedFeatureNames])
-        fixedFeatureTrains = fixedFeatureTensors[torch.logical_not(fixedFeatureValidMask)]
-        fixedFeatureValids = fixedFeatureTensors[fixedFeatureValidMask]
+        raise NotImplementedError
 
-        fixedFeatureNamesNP     = np.array(fixedFeatureNames)
-        fixedFeatureValidMaskNP = fixedFeatureValidMask.numpy()
 
-        fixedFeatureTrainDict = {name: feature for name, feature in zip(fixedFeatureNamesNP[np.logical_not(fixedFeatureValidMaskNP)], fixedFeatureTrains)}
-        fixedFeatureValidDict = {name: feature for name, feature in zip(fixedFeatureNamesNP[fixedFeatureValidMaskNP                ], fixedFeatureValids)}
-    else:
-        fixedFeatureTrainDict = None
-        fixedFeatureValidDict = None
+class ADE20KOutdoorDataset(DatasetMaker):
+    @staticmethod
+    def Make(
+            dataFolder         : str              = "data",
+            validNames         : list[str]        = ["ADE_train_00000004", "ADE_train_00000191", "ADE_train_00000554", "ADE_train_00000555"],
+            imageSize          : int              = 192,
+            trainTransform     : A.Compose | None = None,
+            validTransform     : A.Compose | None = None,
+            extractorTransform : A.Compose | None = None,
+            fixedFeatureFile   : str | None       = None
+    ) -> tuple[ADE20KOutdoorTrainDataset, ADE20KOutdoorTestDataset]:
+        
+        imageFolder   = f"{dataFolder}/image"
+        labelFolder   = f"{dataFolder}/mask"
+        featureFolder = f"{dataFolder}/feature"
 
-    trainImageFiles = [f for f in glob.glob(f"{imageFolder}/*.jpg") if GetBasename(f, True) not in validNames]
-    trainLabelFiles = [ChangeFolder(f, labelFolder, "png") for f in trainImageFiles]
-    trainset = ImageLabelTrainDataset(
-        imageFiles         = trainImageFiles,
-        labelFiles         = trainLabelFiles,
-        trainingTransform  = trainTransform,
-        extractorTransform = extractorTransform,
-        fixedFeatures      = fixedFeatureTrainDict,
-        imageSize          = imageSize
-    )
+        if fixedFeatureFile:
+            fixedFeatureFile = f"{featureFolder}/{fixedFeatureFile}"
+            fixedFeatureDict = torch.load(fixedFeatureFile, map_location="cpu")
+            fixedFeatureNames, fixedFeatureTensors = fixedFeatureDict["filenames"], fixedFeatureDict["features"].float()
+            
+            fixedFeatureValidMask = torch.tensor([(name in validNames) for name in fixedFeatureNames])
+            fixedFeatureTrains = fixedFeatureTensors[torch.logical_not(fixedFeatureValidMask)]
+            fixedFeatureValids = fixedFeatureTensors[fixedFeatureValidMask]
 
-    validImageFiles = [f for f in glob.glob(f"{imageFolder}/*.jpg") if GetBasename(f, True) in validNames]
-    validLabelFiles = [ChangeFolder(f, labelFolder, "png") for f in validImageFiles]
-    validset = ImageLabelTestDataset(
-        imageFiles         = validImageFiles,
-        labelFiles         = validLabelFiles,
-        testingTransform   = validTransform,
-        extractorTransform = extractorTransform,
-        fixedFeatures      = fixedFeatureValidDict,
-        imageSize          = imageSize
-    )
+            fixedFeatureNamesNP     = np.array(fixedFeatureNames)
+            fixedFeatureValidMaskNP = fixedFeatureValidMask.numpy()
 
-    return trainset, validset
+            fixedFeatureTrainDict = {name: feature for name, feature in zip(fixedFeatureNamesNP[np.logical_not(fixedFeatureValidMaskNP)], fixedFeatureTrains)}
+            fixedFeatureValidDict = {name: feature for name, feature in zip(fixedFeatureNamesNP[fixedFeatureValidMaskNP                ], fixedFeatureValids)}
+        else:
+            fixedFeatureTrainDict = None
+            fixedFeatureValidDict = None
+
+        trainImageFiles = [f for f in glob.glob(f"{imageFolder}/*.jpg") if GetBasename(f, True) not in validNames]
+        trainLabelFiles = [ChangeFolder(f, labelFolder, "png") for f in trainImageFiles]
+        trainset = ADE20KOutdoorTrainDataset(
+            imageFiles         = trainImageFiles,
+            labelFiles         = trainLabelFiles,
+            trainingTransform  = trainTransform,
+            extractorTransform = extractorTransform,
+            fixedFeatures      = fixedFeatureTrainDict,
+            imageSize          = imageSize
+        )
+
+        validImageFiles = [f for f in glob.glob(f"{imageFolder}/*.jpg") if GetBasename(f, True) in validNames]
+        validLabelFiles = [ChangeFolder(f, labelFolder, "png") for f in validImageFiles]
+        validset = ADE20KOutdoorTestDataset(
+            imageFiles         = validImageFiles,
+            labelFiles         = validLabelFiles,
+            testingTransform   = validTransform,
+            extractorTransform = extractorTransform,
+            fixedFeatures      = fixedFeatureValidDict,
+            imageSize          = imageSize
+        )
+
+        return trainset, validset

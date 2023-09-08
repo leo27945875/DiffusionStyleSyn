@@ -5,7 +5,7 @@ from lion_pytorch      import Lion
 
 import random
 
-from data       import MakeDatasets
+from data       import ADE20KOutdoorDataset
 from edm        import EDM, EDMCondSampler
 from model      import *
 from utils      import *
@@ -96,7 +96,7 @@ def Train(
     ema.cpu()
 
     # Data:
-    trainset, validset = MakeDatasets(
+    trainset, validset = ADE20KOutdoorDataset.Make(
         dataFolder         = dataFolder,
         imageSize          = imageSize,
         extractorTransform = extractor.GetPreprocess(isFromNormalized=True), 

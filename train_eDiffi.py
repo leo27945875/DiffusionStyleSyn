@@ -7,7 +7,7 @@ import os
 import random
 from functools import partial
 
-from data       import MakeDatasets
+from data       import ADE20KOutdoorDataset
 from edm        import EDM, EDMCondSampler, Seperate
 from model      import *
 from utils      import *
@@ -113,7 +113,7 @@ def Train(
     model    .to(device)
 
     # Data:
-    trainset, validset = MakeDatasets(
+    trainset, validset = ADE20KOutdoorDataset.Make(
         dataFolder         = dataFolder,
         imageSize          = imageSize,
         extractorTransform = extractor.GetPreprocess(isFromNormalized=True), 
