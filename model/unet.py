@@ -6,7 +6,7 @@ from diffusers import UNet2DConditionModel
 from type_alias import *
 
 
-class MyUNet(nn.Module):
+class UNet(nn.Module):
     @property
     def inChannel(self) -> int:
         raise NotImplementedError
@@ -25,7 +25,7 @@ class MyUNet(nn.Module):
         raise NotImplementedError
 
 
-class PrecondUNet(UNet2DConditionModel, MyUNet):
+class PrecondUNet(UNet2DConditionModel, UNet):
     def __init__(self, GetPrecondSigmas: T_Precond_Func, **super_kwargs):
         super().__init__(**super_kwargs)
         self.GetPrecondSigmas = GetPrecondSigmas

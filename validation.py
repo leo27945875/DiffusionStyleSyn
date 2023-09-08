@@ -15,7 +15,7 @@ def ModelBackToCPU(validFunc: Callable):
     def ModelBackToCPU_Valid(
             sampler      : EDMSampler,
             dataloader   : DataLoader,
-            denoiser     : MyUNet,
+            denoiser     : UNet,
             extractor    : Extractor,
             device       : torch.device,
             saveFilename : str
@@ -32,7 +32,7 @@ def ModelBackToCPU(validFunc: Callable):
 def Valid(
         sampler      : EDMSampler,
         dataloader   : DataLoader,
-        denoiser     : MyUNet,
+        denoiser     : UNet,
         extractor    : Extractor,
         device       : torch.device,
         saveFilename : str

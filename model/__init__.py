@@ -1,6 +1,6 @@
 from .extractor import Extractor, CLIPImageEncoder, VQGAN, ExtractorPlaceholder
 from .ensembler import Ensembler
-from .unet      import MyUNet, PrecondUNet
+from .unet      import UNet, PrecondUNet
 from .ema       import ModuleEMA
 
 from type_alias import T_Precond_Func

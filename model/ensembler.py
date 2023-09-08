@@ -3,7 +3,7 @@ import torch.nn as nn
 
 from typing import Callable, TYPE_CHECKING
 
-from .unet import MyUNet
+from .unet import UNet
 from .ema  import ModuleEMA
 from utils import LoadCheckpoint
 
@@ -11,10 +11,10 @@ if TYPE_CHECKING:
     from edm import EDM
 
 
-class Ensembler(MyUNet):
+class Ensembler(UNet):
     def __init__(
             self, 
-            models            : list[MyUNet], 
+            models            : list[UNet], 
             diffusion         : "EDM", 
             trainingIdx       : int | None = None, 
             isSaveMode        : bool       = False, 
@@ -33,7 +33,7 @@ class Ensembler(MyUNet):
 
         self.__lastModelIdx : int | None          = None
         self.__trainingIdx  : int | None          = trainingIdx
-        self.__onlineModel  : list[MyUNet] | None = []          # Using list to avoid being registered to nn.Module.
+        self.__onlineModel  : list[UNet] | None = []          # Using list to avoid being registered to nn.Module.
 
         
         if isSaveMode:
@@ -43,7 +43,7 @@ class Ensembler(MyUNet):
     def InitFromFiles(
         cls, 
         ensembleFiles     : list[str], 
-        BuildModelFunc    : Callable[[], MyUNet], 
+        BuildModelFunc    : Callable[[], UNet], 
         diffusion         : "EDM", 
         trainingIdx       : int | None = None, 
         isSaveMode        : bool       = False, 
@@ -68,7 +68,7 @@ class Ensembler(MyUNet):
         ensembler.eval()
         return ensembler
     
-    def __getitem__(self, i) -> MyUNet:
+    def __getitem__(self, i) -> UNet:
         return self.models[i]
     
     @property
@@ -80,7 +80,7 @@ class Ensembler(MyUNet):
         return self.__outChannel
     
     @property
-    def onlineModel(self) -> MyUNet:
+    def onlineModel(self) -> UNet:
         if not self.__onlineModel:
             return None
         
@@ -140,12 +140,12 @@ class Ensembler(MyUNet):
         
         return super().cuda(device)
     
-    def SetOnlineModel(self, model: MyUNet) -> None:
+    def SetOnlineModel(self, model: UNet) -> None:
         assert model.inChannel  == self.__inChannel , f"[Ensembler.SetOnlineModel()] Found model.inChannel is not consistant."
         assert model.outChannel == self.__outChannel, f"[Ensembler.SetOnlineModel()] Found model.outChannel is not consistant."
         self.__onlineModel = [model]
     
-    def __CheckConsistancy(self, models: list[MyUNet]) -> tuple[int, int]:
+    def __CheckConsistancy(self, models: list[UNet]) -> tuple[int, int]:
         inChannel, outChannel = models[0].inChannel, models[0].outChannel
         for model in models[1:]:
             assert model.inChannel  == inChannel , f"[Ensembler.__CheckConsistancy()] Found model.inChannel is not consistant."

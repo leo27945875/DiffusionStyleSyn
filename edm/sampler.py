@@ -3,7 +3,7 @@ from torchvision.utils import make_grid, save_image
 
 from tqdm import trange
 
-from model    import MyUNet
+from model    import UNet
 from .rescale import DynamicThreshold, RescaleConditionResult
 from .design  import EDM
 
@@ -39,7 +39,7 @@ class EDMSampler:
     @torch.inference_mode()
     def Run(
             self, 
-            denoiser            : MyUNet, 
+            denoiser            : UNet, 
             batchSize           : int, 
             saveFilename        : str  = None, 
             denoiseArgs         : dict = {}, 
@@ -76,7 +76,7 @@ class EDMSampler:
 
         return imgDenorm if isReturnDenormImage else img
 
-    def Denoise(self, denoiser: MyUNet, x: torch.Tensor, sigma: float, denoiseArgs: dict = {}) -> torch.Tensor:
+    def Denoise(self, denoiser: UNet, x: torch.Tensor, sigma: float, denoiseArgs: dict = {}) -> torch.Tensor:
         if self.isThreshold:
             return DynamicThreshold(denoiser(x, torch.tensor(sigma, device=self.device)))
         
@@ -107,7 +107,7 @@ class EDMCondSampler(EDMSampler):
         self.wCond      = wCond
         self.rescalePhi = rescalePhi
 
-    def Denoise(self, denoiser: MyUNet, x: torch.Tensor, sigma: float, denoiseArgs: dict) -> torch.Tensor:
+    def Denoise(self, denoiser: UNet, x: torch.Tensor, sigma: float, denoiseArgs: dict) -> torch.Tensor:
 
         xCond   = torch.cat([x, denoiseArgs["cond"  ]["concat"]], dim=1)
         xUncond = torch.cat([x, denoiseArgs["uncond"]["concat"]], dim=1)

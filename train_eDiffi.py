@@ -185,7 +185,7 @@ def Train(
 
 
 def GetLoss(
-        denoiser   : MyUNet,
+        denoiser   : UNet,
         extractor  : Extractor,
         diffusion  : EDM,
         images     : torch.Tensor,
