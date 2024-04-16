@@ -1,4 +1,4 @@
-# Semantic Image Synthesis with EDM & eDiff-I for Fun
+# Semantic Image Synthesis with EDM & eDiff-I
 
 ## Model Archirecture
 
