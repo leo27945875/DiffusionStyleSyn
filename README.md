@@ -16,11 +16,6 @@ All the testing images are not in the training set.
 
 ![EDM](visual/EDM_128/EDM_128_Epoch970.png)
 
-### eDiff-I
-
-64 x 64 images , 1400 epochs
-
-![eDiff-I](visual/eDiff-i_L2_64[3]/eDiff-i_L2_64[3]_Epoch25.png)
 
 ## Reference
 
